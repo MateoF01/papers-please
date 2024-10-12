@@ -1,24 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import Register from './Registro';
+import Home from './Home';
 
 function App() {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    // Llamada a la API backend
-    axios.get('http://localhost:8080/api')
-      .then(response => {
-        setMessage(response.data);
-      })
-      .catch(error => {
-        console.error('Error al conectar con el backend:', error);
-      });
-  }, []);
-
   return (
-    <div className="App">
-      <h1>Conexión entre React y Node.js</h1>
-      <p>{message}</p>
+    <Router>
+      <Routes>
+        <Route path="/registro" element={<Register />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/" element={<Root />} />
+
+      </Routes>
+    </Router>
+  );
+}
+
+// Componente para la página de inicio (Home)
+function Root() {
+  return (
+    <div>
+      <h1>Root</h1>
+      <p>Bienvenido a nuestra aplicación.</p>
+      <Link to="/registro">
+        <button>Ir a Registro</button>
+      </Link>
     </div>
   );
 }

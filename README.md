@@ -47,6 +47,9 @@ Este proyecto es una aplicación fullstack que utiliza **React** para el fronten
 
 La base de datos SQLite está en `server/database.db`.
 
+Si te paras en server podes ejecutar *sqlite3 database.db* y te deja hacer querys
+
+
 ---
 
 ¡Listo! Con estos pasos puedes levantar el frontend y backend por separado.
