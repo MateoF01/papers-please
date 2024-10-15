@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import BackgroundImage from './background.png';
 
 function Home() {
   const [user, setUser] = useState(null);
@@ -40,9 +41,23 @@ function Home() {
     return <p>{error}</p>;
   }
 
+  const HomeStyle = {
+    backgroundImage: `url(${BackgroundImage})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    height: '100vh',
+    color: '#f5f5f5',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    textAlign: 'center',
+    textShadow: '2px 2px 2px black'
+  };
+
   return (
-    <div>
-      <h1>HOLA {user.user_name}</h1>
+    <div style={HomeStyle}>
+      <h1>Bienvenido, {user.user_name}</h1>
       <button onClick={handleLogout}>Cerrar Sesión</button>
     </div>
   );
