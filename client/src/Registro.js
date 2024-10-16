@@ -63,8 +63,10 @@ function Register() {
             type="password"
             placeholder="Contraseña"
             value={password}
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}"
             onChange={e => setPassword(e.target.value)}
             required
+            title="La contraseña debe tener al menos 12 caracteres con al menos una letra mayúscula, una letra minúscula, un número y un símbolo."
           />
         </div>
         <button type="submit">Registrarse</button>
