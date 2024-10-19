@@ -1,26 +1,24 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
-import Register from './Registro';
+import Register from './Register';
+import Login from './Login';
 import Home from './Home';
-import backgroundImage from './background.png'; // Import your image
-
+import backgroundImage from './background.png';
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/registro" element={<Register />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
         <Route path="/" element={<Root />} />
-
       </Routes>
     </Router>
   );
 }
 
-// Componente para la página de inicio (Home)
 function Root() {
-
   const rootStyle = {
     backgroundImage: `url(${backgroundImage})`,
     backgroundSize: 'cover',
@@ -39,8 +37,11 @@ function Root() {
     <div style={rootStyle}>
       <h1>Root</h1>
       <h3>Bienvenido a nuestra aplicación.</h3>
-      <Link to="/registro">
+      <Link to="/register">
         <button>Ir a Registro</button>
+      </Link>
+      <Link to="/login">
+        <button>Iniciar Sesión</button>
       </Link>
     </div>
   );

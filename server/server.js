@@ -25,22 +25,38 @@ app.use(session({
 
 //--------------- ENDPOINTS (ORDENAR) ----------------------
 
-app.post('/api/registrar', (req, res) => {
+app.post('/api/register', (req, res) => {
     const { userName, email, password } = req.body;
 
-    // Verificar si el email ya está registrado
-    const checkEmailSql = `SELECT * FROM users WHERE email = ?`;
-    db.get(checkEmailSql, [email], (err, row) => {
+    // Validación de la contraseña
+    const passwordRegex = /^(?=.*[a-zA-ZÀ-ÿ])(?=.*[A-ZÀ-ÿ])(?=.*\d)(?=.*[@$!%*?&])[A-Za-zÀ-ÿ\d@$!%*?&]{12,}$/;
+
+    if (!passwordRegex.test(password)) {
+        return res.status(400).json({
+            error: 'La contraseña debe tener al menos 12 caracteres, una mayúscula, una minúscula, un número y un símbolo.'
+        });
+    }
+
+    // Consulta para verificar si el correo electrónico o el nombre de usuario ya están registrados
+    const checkUserOrEmailSql = `SELECT * FROM users WHERE email = ? OR user_name = ?`;
+
+    db.get(checkUserOrEmailSql, [email, userName], (err, row) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
 
         if (row) {
-            // Si el correo ya existe, enviamos un error
-            return res.status(400).json({ error: 'El correo ya está registrado.' });
+            // Si el correo o el nombre de usuario ya existe, enviamos un error
+            if (row.email === email && row.user_name === userName) {
+                return res.status(400).json({ error: 'El correo y el nombre de usuario ya están registrados.' });
+            } else if (row.email === email) {
+                return res.status(400).json({ error: 'El correo ya está registrado.' });
+            } else if (row.user_name === userName) {
+                return res.status(400).json({ error: 'El nombre de usuario ya está registrado.' });
+            }
         }
 
-        // Si el correo no existe, procedemos a registrar el nuevo usuario
+        // Si el correo y el usuario no existen, procedemos a registrar el nuevo usuario
         const insertSql = `INSERT INTO users (user_name, email, password) VALUES (?, ?, ?)`;
         db.run(insertSql, [userName, email, password], function (err) {
             if (err) {
@@ -49,12 +65,10 @@ app.post('/api/registrar', (req, res) => {
 
             // Establecer la sesión con el ID del usuario registrado
             req.session.usuarioId = this.lastID; 
-            res.status(201).json({ id: this.lastID, userName });
+            res.status(201).json({ id: this.lastID, userName, email, password });
         });
     });
 });
-
-
 
 
 
@@ -68,13 +82,57 @@ const verificarAutenticacion = (req, res, next) => {
 };
 
 
-app.get('/api/usuario', verificarAutenticacion, (req, res) => {
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+
+    // Realiza una única consulta para verificar el email y la contraseña
+    const sql = `
+        SELECT * FROM users 
+        WHERE email = ?`;
+
+    db.get(sql, [email], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (!row) {
+            // El correo no existe
+            return res.status(404).json({ error: 'El correo electrónico no está registrado.' });
+        }
+
+        // Si el correo existe, verifica la contraseña
+        if (row.password !== password) {
+            // La contraseña es incorrecta
+            return res.status(401).json({ error: 'Credenciales inválidas.' });
+        }
+
+        // Si las credenciales son correctas, establece la sesión
+        req.session.usuarioId = row.id;
+        res.json({ message: 'Inicio de sesión exitoso', userName: row.user_name });
+    });
+});
+
+  
+
+
+app.get('/api/user', verificarAutenticacion, (req, res) => {
     const sql = `SELECT * FROM users WHERE id = ?`;
     db.get(sql, [req.session.usuarioId], (err, row) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
         res.json(row);
+    });
+});
+
+app.post('/api/user/clear', (req, res) => {
+    const sql = `DELETE FROM users`;
+
+    db.run(sql, (err) => { // Utilizamos db.run en lugar de db.get porque no estamos esperando un resultado específico
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ message: 'Todos los usuarios han sido eliminados correctamente.' });
     });
 });
 

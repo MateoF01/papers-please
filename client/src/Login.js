@@ -3,26 +3,30 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import backgroundImage from './background.png';
 
-function Register() {
-  const [userName, setUserName] = useState('');
+function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
 
-    axios.post('http://localhost:8080/api/registrar', { userName, email, password },  { withCredentials: true })
+    axios.post('http://localhost:8080/api/login', { email, password }, { withCredentials: true })
       .then(response => {
-        // Si el registro es exitoso, redirigir al usuario a la pantalla de inicio
         navigate('/home');
       })
       .catch(error => {
-        console.error('Error al registrar el usuario:', error);
+        if (error.response && error.response.status === 401) {
+          setError('Email o contraseña incorrectos');
+        } else {
+          setError('Error al iniciar sesión');
+        }
       });
   };
 
-  const registerStyle = {
+  const loginStyle = {
     backgroundImage: `url(${backgroundImage})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
@@ -37,18 +41,10 @@ function Register() {
   };
 
   return (
-    <div style={registerStyle}>
-      <h1>Registro</h1>
+    <div style={loginStyle}>
+      <h1>Iniciar Sesión</h1>
+      {error && <p style={{color: 'red'}}>{error}</p>}
       <form onSubmit={handleSubmit}>
-        <div>
-          <input
-            type="text"
-            placeholder="Nombre de usuario"
-            value={userName}
-            onChange={e => setUserName(e.target.value)}
-            required
-          />
-          </div>
         <div>
           <input
             type="email"
@@ -63,16 +59,14 @@ function Register() {
             type="password"
             placeholder="Contraseña"
             value={password}
-            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}"
             onChange={e => setPassword(e.target.value)}
             required
-            title="La contraseña debe tener al menos 12 caracteres con al menos una letra mayúscula, una letra minúscula, un número y un símbolo."
           />
         </div>
-        <button type="submit">Registrarse</button>
+        <button type="submit">Iniciar Sesión</button>
       </form>
     </div>
   );
 }
 
-export default Register;
+export default Login;

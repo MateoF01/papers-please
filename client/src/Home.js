@@ -11,7 +11,7 @@ function Home() {
 
   useEffect(() => {
     // Llamada a la API para obtener la información del usuario desde la sesión
-    axios.get('http://localhost:8080/api/usuario',  { withCredentials: true })
+    axios.get('http://localhost:8080/api/user',  { withCredentials: true })
       .then(response => {
         setUser(response.data);
         setLoading(false);
