@@ -2,6 +2,32 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import BackgroundImage from './background.png';
+import styled from 'styled-components';
+
+const Button = styled.button`
+  display: inline-block;
+  padding: 15px 25px;
+  font-size: 24px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: #5ad390;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 9px #999;
+
+  &:hover {
+    background-color: #50b97f
+  }
+
+  &:active {
+    background-color: #50b97f;
+    box-shadow: 0 5px #666;
+    transform: translateY(4px);
+  }
+  `;
 
 function Home() {
   const [user, setUser] = useState(null);
@@ -58,7 +84,7 @@ function Home() {
   return (
     <div style={HomeStyle}>
       <h1>Bienvenido, {user.user_name}</h1>
-      <button onClick={handleLogout}>Cerrar Sesión</button>
+      <Button onClick={handleLogout}>Cerrar Sesión</Button>
     </div>
   );
 }
