@@ -84,7 +84,6 @@ function Home() {
   return (
     <div style={HomeStyle}>
       <h1>Bienvenido, {user.user_name}</h1>
-      <Button onClick={handleLogout}>Cerrar Sesión</Button>
     </div>
   );
 }
