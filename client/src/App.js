@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
 import Register from './Register';
 import Login from './Login';
 import Home from './Home';
@@ -24,6 +25,11 @@ const NavbarBrand = styled(Link)`
   font-size: 1.5rem;
   text-decoration: none;
   font-weight: bold;
+`;
+
+const NavbarRight = styled.div`
+  display: flex;
+  align-items: center;
 `;
 
 const DropdownContainer = styled.div`
@@ -69,7 +75,7 @@ const DropdownItem = styled(Link)`
   }
 `;
 
-const LogoutButton = styled(Link)`
+const LogoutButton = styled.button`
   background-color: transparent;
   color: #f5f5f5;
   border: 1px solid #f5f5f5;
@@ -89,14 +95,32 @@ const LogoutButton = styled(Link)`
 function NavbarContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const [error, setError] = useState(null);
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+
+  const handleLogout = () => {
+    axios.post('http://localhost:8080/api/logout', {}, { withCredentials: true })
+      .then(() => {
+        navigate('/');
+      })
+      .catch(() => {
+        setError('Error al cerrar la sesión');
+      });
+  };
+
+  if (error) {
+    return <p>{error}</p>;
+  }
 
   if (location.pathname === '/home') {
     return (
       <>
-        <NavbarBrand to="/">Papers Please</NavbarBrand>
-        <LogoutButton to="/">Cerrar Sesión</LogoutButton>
+        <NavbarBrand to="/home">Papers Please</NavbarBrand>
+        <NavbarRight>
+          <LogoutButton onClick={handleLogout}>Cerrar Sesión</LogoutButton>
+        </NavbarRight>
       </>
     );
   }
@@ -104,15 +128,17 @@ function NavbarContent() {
   return (
     <>
       <NavbarBrand to="/">Papers Please</NavbarBrand>
-      <DropdownContainer>
-        <DropdownButton onClick={toggleDropdown}>
-          Cuenta
-        </DropdownButton>
-        <DropdownMenu isOpen={isDropdownOpen}>
-          <DropdownItem to="/register" onClick={toggleDropdown}>Registro</DropdownItem>
-          <DropdownItem to="/login" onClick={toggleDropdown}>Iniciar Sesión</DropdownItem>
-        </DropdownMenu>
-      </DropdownContainer>
+      <NavbarRight>
+        <DropdownContainer>
+          <DropdownButton onClick={toggleDropdown}>
+            Cuenta
+          </DropdownButton>
+          <DropdownMenu isOpen={isDropdownOpen}>
+            <DropdownItem to="/register" onClick={toggleDropdown}>Registro</DropdownItem>
+            <DropdownItem to="/login" onClick={toggleDropdown}>Iniciar Sesión</DropdownItem>
+          </DropdownMenu>
+        </DropdownContainer>
+      </NavbarRight>
     </>
   );
 }
