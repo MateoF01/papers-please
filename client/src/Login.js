@@ -44,6 +44,16 @@ const Button = styled.button`
   }
 `;
 
+const generalErrorStyle = {
+  color: '#ff6363',
+  backgroundColor: '#ffe6e6',
+  padding: '5px 10px',
+  borderRadius: '5px',
+  margin: '10px 0',
+  width: '8%',
+  boxShadow: '1px 1px 5px 2px rgba(0, 0, 0, 0.1)',
+};
+
 const loginStyle = {
   backgroundImage: `url(${backgroundImage})`,
   backgroundSize: 'cover',
@@ -55,7 +65,7 @@ const loginStyle = {
   justifyContent: 'center',
   alignItems: 'center',
   textAlign: 'center',
-  textShadow: '2px 2px 2px black',
+  textShadow: '1px 1px 2px black',
 };
 
 const inputContainerStyle = {
@@ -81,7 +91,7 @@ const eyeButtonStyle = {
 };
 
 function Login() {
-  const [email, setEmail] = useState('');
+  const [correoUsuario, setCorreoUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false); // Estado para alternar visibilidad de la contraseña
   const [error, setError] = useState('');
@@ -96,15 +106,15 @@ function Login() {
     e.preventDefault();
     setError('');
     setLoading(true)
-    axios.post('http://localhost:8080/api/login', { email, password }, { withCredentials: true })
+    axios.post('http://localhost:8080/api/login', { usuario: correoUsuario, password }, { withCredentials: true })
       .then(response => {
         setLoading(false)
         navigate('/home');
       })
       .catch(error => {
         setLoading(false)
-        if (error.response && error.response.status === 401) {
-          setError('Email o contraseña incorrectos');
+        if (error.response && (error.response.status === 401 || error.response.status === 404 || error.response.status === 500)) {
+          setError(error.response.data.error);
         } else {
           setError('Error al iniciar sesión');
         }
@@ -114,15 +124,14 @@ function Login() {
   return (
     <div style={loginStyle}>
       <h1>Iniciar Sesión</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <h4 style={generalErrorStyle}>{error}</h4>}
       <form onSubmit={handleSubmit}>
         <div style={inputContainerStyle}>
           <Input
-            type="email"
-            placeholder="Correo electrónico"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
+            type="correoUsuario"
+            placeholder="Correo electrónico o Usuario"
+            value={correoUsuario}
+            onChange={e => setCorreoUsuario(e.target.value)}
             required
           />
         </div>
@@ -142,9 +151,9 @@ function Login() {
             {passwordVisible ? <FaEyeSlash /> : <FaEye />} {/* Íconos de ojo */}
           </button>
         </div>
-        <button type="submit" disabled={loading } style={{ marginTop: '10px' }}>
+        <Button type="submit" disabled={loading } style={{ marginTop: '10px' }}>
           {loading ? <TailSpin stroke="#000000" /> : 'Iniciar Sesión'}
-        </button>
+        </Button>
       </form>
       {loading} {}
     </div>

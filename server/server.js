@@ -83,21 +83,20 @@ const verificarAutenticacion = (req, res, next) => {
 
 
 app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
-
+    const { usuario, password } = req.body;
     // Realiza una única consulta para verificar el email y la contraseña
     const sql = `
         SELECT * FROM users 
-        WHERE email = ?`;
+        WHERE email = ? OR user_name = ?`;
 
-    db.get(sql, [email], (err, row) => {
+    db.get(sql, [usuario, usuario], (err, row) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
 
         if (!row) {
             // El correo no existe
-            return res.status(404).json({ error: 'El correo electrónico no está registrado.' });
+            return res.status(404).json({ error: 'El usuario no está registrado.' });
         }
 
         // Si el correo existe, verifica la contraseña

@@ -7,6 +7,31 @@ import Home from './Home';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
 
+const Button = styled.button`
+  display: inline-block;
+  width: 200px;
+  height: 55px;
+  padding: 15px 25px;
+  font-size: 24px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: #fff;
+  background-color: #5ad390;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 9px #999;
+  &:hover {
+    background-color: #50b97f
+  }
+  &:active {
+    background-color: #50b97f;
+    box-shadow: 0 5px #666;
+    transform: translateY(4px);
+  }
+  `;
+
 const Navbar = styled.nav`
   display: flex;
   justify-content: space-between;
@@ -58,7 +83,7 @@ const DropdownMenu = styled.div`
   background-color: #fff;
   border-radius: 4px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: ${props => props.isOpen ? 'block' : 'none'};
+  display: ${({$isOpen}) => ($isOpen ? 'block' : 'none')};
   min-width: 150px;
 `;
 
@@ -133,7 +158,7 @@ function NavbarContent() {
           <DropdownButton onClick={toggleDropdown}>
             Cuenta
           </DropdownButton>
-          <DropdownMenu isOpen={isDropdownOpen}>
+          <DropdownMenu $isOpen={isDropdownOpen}>
             <DropdownItem to="/register" onClick={toggleDropdown}>Registro</DropdownItem>
             <DropdownItem to="/login" onClick={toggleDropdown}>Iniciar Sesión</DropdownItem>
           </DropdownMenu>
@@ -171,14 +196,23 @@ function Root() {
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    textShadow: '2px 2px 2px black',
-    paddingTop: '60px',
+    textShadow: '2px 2px 2px black'
   };
 
   return (
     <div style={rootStyle}>
       <h1>Papers Please</h1>
       <h3>Bienvenido a nuestra aplicación.</h3>
+      <div style={{padding: '2%'}}>
+        <Link to="/register">
+          <Button>Ir a Registro</Button>
+        </Link>
+      </div>
+      <div>
+        <Link to="/login">
+          <Button>Iniciar Sesión</Button>
+        </Link>
+      </div>
     </div>
   );
 }
