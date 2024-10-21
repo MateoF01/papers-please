@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import BackgroundImage from './background.png';
 import styled from 'styled-components';
+import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 
 const Button = styled.button`
   display: inline-block;
@@ -32,6 +33,7 @@ const Button = styled.button`
 function Home() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingButton, setLoadingButton] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate(); // Hook para navegar entre rutas
 
@@ -50,11 +52,14 @@ function Home() {
 
   const handleLogout = () => {
     // Llamada al endpoint de logout
+    setLoadingButton(true)
     axios.post('http://localhost:8080/api/logout', {}, { withCredentials: true })
-      .then(() => {
+    .then(() => {
+        setLoadingButton(false)
         navigate('/'); // Redirige a la página de inicio (Root)
       })
       .catch(() => {
+        setLoadingButton(false)
         setError('Error al cerrar la sesión');
       });
   };
@@ -84,7 +89,9 @@ function Home() {
   return (
     <div style={HomeStyle}>
       <h1>Bienvenido, {user.user_name}</h1>
-      <Button onClick={handleLogout}>Cerrar Sesión</Button>
+      <Button onClick={handleLogout} disabled={loadingButton} style={{ marginTop: '10px' }}>
+        {loading ? <TailSpin stroke="#000000" /> : 'Cerrar Sesión'}
+      </Button>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
+import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 
 const Input = styled.input`
   width: 100%;
@@ -91,6 +92,8 @@ function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleUserNameChange = useCallback((e) => {
@@ -131,12 +134,15 @@ function Register() {
       setErrors(newErrors);
       return;
     }
-
+    
+    setLoading(true);
     axios.post('http://localhost:8080/api/register', { userName, email, password }, { withCredentials: true })
-      .then(response => {
+    .then(response => {
+        setLoading(false);
         navigate('/home');
       })
       .catch(error => {
+        setLoading(false);
         if (error.response && error.response.data.error) {
           setErrors({ general: error.response.data.error });
         } else {
@@ -192,7 +198,9 @@ function Register() {
           );
         })()}
         </div>
-        <Button type="submit">Registrarse</Button>
+        <Button type="sumbit" disabled={loading} style={{ marginTop: '10px' }}>
+        {loading ? <TailSpin stroke="#000000" /> : 'Registrarse'}
+        </Button>
       </form>
     </div>
   );
