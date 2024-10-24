@@ -10,10 +10,9 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [loadingButton, setLoadingButton] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate(); // Hook para navegar entre rutas
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Llamada a la API para obtener la información del usuario desde la sesión
     axios.get('http://localhost:8080/api/user',  { withCredentials: true })
       .then(response => {
         setUser(response.data);
@@ -26,17 +25,20 @@ function Home() {
   }, []);
 
   const handleLogout = () => {
-    // Llamada al endpoint de logout
     setLoadingButton(true)
     axios.post('http://localhost:8080/api/logout', {}, { withCredentials: true })
     .then(() => {
         setLoadingButton(false)
-        navigate('/'); // Redirige a la página de inicio (Root)
+        navigate('/');
       })
       .catch(() => {
         setLoadingButton(false)
         setError('Error al cerrar la sesión');
       });
+  };
+
+  const handleCreatePublication = () => {
+    navigate('/publication');
   };
 
   if (loading) {
@@ -46,6 +48,12 @@ function Home() {
   if (error) {
     return <p>{error}</p>;
   }
+
+  const buttonContainerStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '30px',
+  };
 
   const HomeStyle = {
     backgroundImage: `url(${BackgroundImage})`,
@@ -58,9 +66,9 @@ function Home() {
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    textShadow: '2px 2px 20px black'
+    textShadow: '2px 2px 2px black'
   };
-  
+
   const overlayStyle = {
     position: 'absolute',
     top: 0,
@@ -85,15 +93,22 @@ function Home() {
     <div style={HomeStyle}>
       <div style={overlayStyle}></div>
       <div style={contentStyle}>
-        <h1>Bienvenido, {user.user_name}</h1>
+      <h1>Bienvenido, {user.user_name}</h1>
+      <div style={buttonContainerStyle}>
         <DefaultButton
-            type="button"
-            disabled={loadingButton}
-            handleClick={handleLogout}
-            content={loading ? <TailSpin stroke="#000000" /> : 'Cerrar Sesión'}
-            secondary
-          />
+          type="button"
+          disabled={loadingButton}
+          handleClick={handleLogout}
+          content={loadingButton ? <TailSpin stroke="#000000" /> : 'Cerrar Sesión'}
+          secondary     
+        />
+        <DefaultButton
+          type="button"
+          handleClick={handleCreatePublication}
+          content="Crear Publicación"
+        />
         </div>
+      </div>
     </div>
   );
 }

@@ -4,17 +4,15 @@ const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const cors = require('cors');
 
-
 const app = express();
 const db = new sqlite3.Database('./database.db');
 
 app.use(bodyParser.json());
 app.use(cors({
     origin: 'http://localhost:3000', 
-    credentials: true                // Permitir el uso de cookies y sesiones
+    credentials: true
 }));
 
-// Configurar sesiones
 app.use(session({
     secret: 'mySuperSecretKey123!', 
     resave: false,                  
@@ -81,7 +79,6 @@ const verificarAutenticacion = (req, res, next) => {
     }
 };
 
-
 app.post('/api/login', (req, res) => {
     const { usuario, password } = req.body;
     // Realiza una única consulta para verificar el email y la contraseña
@@ -146,6 +143,39 @@ app.post('/api/logout', (req, res) => {
         res.status(200).json({ message: 'Sesión cerrada correctamente' });
     });
 });
+
+
+
+app.post('/api/posts', verificarAutenticacion, (req, res) => {
+    console.log('Received post request:', req.body);
+    console.log('User ID from session:', req.session.usuarioId);
+    const { title, body } = req.body;
+    const userId = req.session.usuarioId;
+
+    if (!title || !body) {
+        return res.status(400).json({ error: 'Title and body are required' });
+    }
+
+    const sql = `INSERT INTO posts (user_id, title, body, created_at) VALUES (?, ?, ?, datetime('now'))`;
+    
+    db.run(sql, [userId, title, body], function(err) {
+        if (err) {
+            console.error('Error creating post:', err);
+            return res.status(500).json({ error: 'Error al crear la publicación' });
+        }
+        
+        res.status(201).json({
+            id: this.lastID,
+            user_id: userId,
+            title,
+            body,
+            created_at: new Date().toISOString()
+        });
+    });
+});
+
+
+
 
 // Cierra la conexión a la base de datos al finalizar el servidor
 app.on('exit', () => {

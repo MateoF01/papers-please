@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate 
 import Register from './Register';
 import Login from './Login';
 import Home from './Home';
+import Publication from './Publication';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
 import DefaultButton from './components/button/DefaultButton';
@@ -50,6 +51,23 @@ const DropdownButton = styled.button`
     background-color: rgba(255, 255, 255, 0.1);
   }
 `;
+
+
+const NavbarButton = styled.button`
+  background-color: transparent;
+  color: #f5f5f5;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+`;
+
 
 const DropdownMenu = styled.div`
   position: absolute;
@@ -98,11 +116,18 @@ const buttonContainerStyle = {
   gap: '30px',
 };
 
+
+
+
 function NavbarContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [error, setError] = useState(null);
+
+  const handleNavigateToPublication = () => {
+    navigate('/publication');
+  };
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
@@ -120,11 +145,12 @@ function NavbarContent() {
     return <p>{error}</p>;
   }
 
-  if (location.pathname === '/home') {
+  if (location.pathname === '/home' || location.pathname === '/publication') {
     return (
       <>
         <NavbarBrand to="/home">Papers Please</NavbarBrand>
         <NavbarRight>
+          <NavbarButton onClick={handleNavigateToPublication}>Crear Publicación</NavbarButton>
           <LogoutButton onClick={handleLogout}>Cerrar Sesión</LogoutButton>
         </NavbarRight>
       </>
@@ -159,6 +185,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/publication" element={<Publication />} />
         <Route path="/" element={<Root />} />
       </Routes>
     </Router>
@@ -179,7 +206,7 @@ function Root() {
     textAlign: 'center',
     textShadow: '2px 2px 20px black'
   };
-  
+
   const overlayStyle = {
     position: 'absolute',
     top: 0,
