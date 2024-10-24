@@ -2,57 +2,14 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import backgroundImage from './background.png';
-import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import styled from 'styled-components';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; // Íconos de "ojo" para mostrar/ocultar contraseña
-
-const Input = styled.input`
-  width: 100%;
-  padding: 10px;
-  box-sizing: border-box;
-  border: 3px solid #ccc;
-  transition: border 0.5s;
-  outline: none;
-
-  &:focus {
-    border: 3px solid #555;
-  }
-`;
-
-const Button = styled.button`
-  display: inline-block;
-  padding: 15px 25px;
-  font-size: 24px;
-  cursor: pointer;
-  text-align: center;
-  text-decoration: none;
-  outline: none;
-  color: #fff;
-  background-color: #5ad390;
-  border: none;
-  border-radius: 15px;
-  box-shadow: 0 9px #999;
-
-  &:hover {
-    background-color: #50b97f;
-  }
-
-  &:active {
-    background-color: #50b97f;
-    box-shadow: 0 5px #666;
-    transform: translateY(4px);
-  }
-`;
-
-const generalErrorStyle = {
-  color: '#ff6363',
-  backgroundColor: '#ffe6e6',
-  padding: '5px 10px',
-  borderRadius: '5px',
-  margin: '10px 0',
-  width: '8%',
-  boxShadow: '1px 1px 5px 2px rgba(0, 0, 0, 0.1)',
-};
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
+import { Formik, Form } from "formik";
+import * as Yup from "yup";
+import { Heading1 } from './components/text/Heading';
+import DefaultButton from "./components/button/DefaultButton";
+import TextInput from './components/form/input/text';
 
 const loginStyle = {
   backgroundImage: `url(${backgroundImage})`,
@@ -65,21 +22,16 @@ const loginStyle = {
   justifyContent: 'center',
   alignItems: 'center',
   textAlign: 'center',
-  textShadow: '1px 1px 2px black',
 };
 
-const inputContainerStyle = {
+const passwordInputContainerStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
   position: 'relative',
   marginBottom: '20px',
   width: '100%',
   maxWidth: '300px',
-};
-
-const passwordInputContainerStyle = {
-  ...inputContainerStyle,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
 };
 
 const eyeButtonStyle = {
@@ -88,76 +40,111 @@ const eyeButtonStyle = {
   cursor: 'pointer',
   position: 'absolute',
   right: '10px',
+  bottom: '20%',
 };
 
+const StyledForm = styled(Form)`
+  background: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  border: 2px solid #A1DA39;
+  box-sizing: border-box;
+  border-radius: 9px;
+  padding: 50px 100px;
+`;
+
+const StyledErrorMessage = styled.div`
+  font-family: "InterRegular";
+  margin-top: -5px;
+  max-width: 320px;
+  word-wrap: break-word;
+  white-space: normal;
+  color: #DE4C38;
+  font-size: 1rem;
+`;
+
 function Login() {
-  const [correoUsuario, setCorreoUsuario] = useState('');
-  const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false); // Estado para alternar visibilidad de la contraseña
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const togglePasswordVisibility = () => {
-    setPasswordVisible(!passwordVisible); // Alternamos la visibilidad de la contraseña
+    setPasswordVisible(!passwordVisible);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true)
-    axios.post('http://localhost:8080/api/login', { usuario: correoUsuario, password }, { withCredentials: true })
+  const validationSchema = Yup.object({
+    usuario: Yup.string().required('El correo electrónico o nombre de usuario es obligatorio'),
+    password: Yup.string().required('La contraseña es obligatoria'),
+  });
+
+  const handleSubmit = (values, { setSubmitting, setErrors }) => {
+    axios.post('http://localhost:8080/api/login', values, { withCredentials: true })
       .then(response => {
-        setLoading(false)
+        setSubmitting(false);
         navigate('/home');
       })
       .catch(error => {
-        setLoading(false)
+        setSubmitting(false);
         if (error.response && (error.response.status === 401 || error.response.status === 404 || error.response.status === 500)) {
-          setError(error.response.data.error);
+          setErrors({ general: error.response.data.error });
         } else {
-          setError('Error al iniciar sesión');
+          setErrors({ general: 'Error al iniciar sesión' });
         }
       });
   };
 
   return (
     <div style={loginStyle}>
-      <h1>Iniciar Sesión</h1>
-      {error && <h4 style={generalErrorStyle}>{error}</h4>}
-      <form onSubmit={handleSubmit}>
-        <div style={inputContainerStyle}>
-          <Input
-            type="correoUsuario"
-            placeholder="Correo electrónico o Usuario"
-            value={correoUsuario}
-            onChange={e => setCorreoUsuario(e.target.value)}
-            required
-          />
-        </div>
-        <div style={passwordInputContainerStyle}>
-          <Input
-            type={passwordVisible ? 'text' : 'password'} // Cambia el tipo de input según el estado
-            placeholder="Contraseña"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
-          <button
-            type="button"
-            onClick={togglePasswordVisibility}
-            style={eyeButtonStyle}
-          >
-            {passwordVisible ? <FaEyeSlash /> : <FaEye />} {/* Íconos de ojo */}
-          </button>
-        </div>
-        <Button type="submit" disabled={loading } style={{ marginTop: '10px' }}>
-          {loading ? <TailSpin stroke="#000000" /> : 'Iniciar Sesión'}
-        </Button>
-      </form>
-      {loading} {}
+      <Formik
+        initialValues={{
+          usuario: "",
+          password: "",
+        }}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+      >
+        {({ isSubmitting, errors, touched }) => (
+          <StyledForm>
+            <div>
+              <Heading1>Iniciar sesión</Heading1>
+            </div>
+            
+            {errors.general && <StyledErrorMessage>{errors.general}</StyledErrorMessage>}
+            
+            <TextInput
+              type="text"
+              label="Correo electrónico o Usuario"
+              name="usuario"
+              placeholder="Correo electrónico o Usuario"
+            />
+
+            <div style={passwordInputContainerStyle}>
+              <TextInput
+                type={passwordVisible ? 'text' : 'password'}
+                label="Contraseña"
+                name="password"
+                placeholder="Contraseña"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                style={eyeButtonStyle}
+              >
+                {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            <DefaultButton
+              type="submit"
+              disabled={isSubmitting}
+              content={isSubmitting ? <TailSpin stroke="#000000" /> : 'Iniciar Sesión'}
+              secondary
+            />
+          </StyledForm>
+        )}
+      </Formik>
     </div>
   );
-  }
-  
-  export default Login;
+}
+
+export default Login;

@@ -6,32 +6,7 @@ import Login from './Login';
 import Home from './Home';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
-
-const Button = styled.button`
-  display: inline-block;
-  width: 200px;
-  height: 55px;
-  padding: 15px 25px;
-  font-size: 24px;
-  cursor: pointer;
-  text-align: center;
-  text-decoration: none;
-  outline: none;
-  color: #fff;
-  background-color: #5ad390;
-  border: none;
-  border-radius: 15px;
-  box-shadow: 0 9px #999;
-  &:hover {
-    background-color: #50b97f
-  }
-  &:active {
-    background-color: #50b97f;
-    box-shadow: 0 5px #666;
-    transform: translateY(4px);
-  }
-  `;
-
+import DefaultButton from './components/button/DefaultButton';
 const Navbar = styled.nav`
   display: flex;
   justify-content: space-between;
@@ -117,6 +92,12 @@ const LogoutButton = styled.button`
   }
 `;
 
+const buttonContainerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '30px',
+};
+
 function NavbarContent() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const location = useLocation();
@@ -196,23 +177,27 @@ function Root() {
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
-    textShadow: '2px 2px 2px black'
+    textShadow: '2px 2px 20px black'
   };
 
   return (
     <div style={rootStyle}>
-      <h1>Papers Please</h1>
-      <h3>Bienvenido a nuestra aplicación.</h3>
-      <div style={{padding: '2%'}}>
-        <Link to="/register">
-          <Button>Ir a Registro</Button>
-        </Link>
-      </div>
-      <div>
-        <Link to="/login">
-          <Button>Iniciar Sesión</Button>
-        </Link>
-      </div>
+      <h1 style={{ fontSize: '4rem' }}>Papers Please</h1>
+      <h2>Bienvenido a nuestra aplicación.</h2>
+      
+      <div style={buttonContainerStyle}>
+        <DefaultButton
+          type="button"
+          content='Ir al Registro'
+          destination="/register"
+          secondary
+        />
+        <DefaultButton
+          type="button"
+          destination="/login"
+          content='Iniciar Sesión'
+        />
+      </div>    
     </div>
   );
 }
