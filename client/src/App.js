@@ -188,14 +188,14 @@ function Root() {
       <div style={buttonContainerStyle}>
         <DefaultButton
           type="button"
-          content='Ir al Registro'
-          destination="/register"
+          destination="/login"
+          content='Iniciar Sesión'
           secondary
         />
         <DefaultButton
           type="button"
-          destination="/login"
-          content='Iniciar Sesión'
+          content='Ir al Registro'
+          destination="/register"
         />
       </div>    
     </div>
