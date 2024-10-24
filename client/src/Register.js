@@ -26,6 +26,21 @@ const registerStyle = {
   textAlign: 'center',
 };
 
+const overlayStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  zIndex: 1,
+};
+
+const contentStyle = {
+  position: 'relative',
+  zIndex: 2,
+};
+
 const passwordInputContainerStyle = {
   position: 'relative',
   marginBottom: '20px',
@@ -108,62 +123,65 @@ function Register() {
 
   return (
     <div style={registerStyle}>
-      <Formik
-        initialValues={{
-          userName: "",
-          email: "",
-          password: "",
-        }}
-        validationSchema={validationSchema}
-        onSubmit={handleSubmit}
-      >
-        {({ isSubmitting, errors, touched }) => (
-          <StyledForm>
-            
-            <div>
-              <Heading1>Registro de usuario</Heading1>
-              <Paragraph1>Registrese para poder acceder a las funcionalidades de nuestro sitio</Paragraph1>
-            </div>
-            
-            {errors.general && <StyledErrorMessage>{errors.general}</StyledErrorMessage>}
-            
-            <TextInput
-              type="text"
-              label="Nombre de usuario"
-              name="userName"
-              placeholder="Nombre de usuario"
-            />
-
-            <TextInput
-              type="email"
-              label="Correo electrónico"
-              name="email"
-              placeholder="Correo electrónico"
-            />
-            <div style={passwordInputContainerStyle}>
+      <div style={overlayStyle}></div>
+      <div style={contentStyle}>
+        <Formik
+          initialValues={{
+            userName: "",
+            email: "",
+            password: "",
+          }}
+          validationSchema={validationSchema}
+          onSubmit={handleSubmit}
+        >
+          {({ isSubmitting, errors, touched }) => (
+            <StyledForm>
+              
+              <div>
+                <Heading1>Registro de usuario</Heading1>
+                <Paragraph1>Registrese para poder acceder a las funcionalidades de nuestro sitio</Paragraph1>
+              </div>
+              
+              {errors.general && <StyledErrorMessage>{errors.general}</StyledErrorMessage>}
+              
               <TextInput
-                type={passwordVisible ? 'text' : 'password'}
-                label="Contraseña"
-                name="password"
-                placeholder="Contraseña"
+                type="text"
+                label="Nombre de usuario"
+                name="userName"
+                placeholder="Nombre de usuario"
               />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                style={eyeButtonStyle}
-              >
-                {passwordVisible ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-            <DefaultButton
-              type="submit"
-              disabled={isSubmitting}
-              content={isSubmitting ? <TailSpin stroke="#000000" /> : 'Registrarse'}
-              secondary
-            />
-          </StyledForm>
-        )}
-      </Formik>
+
+              <TextInput
+                type="email"
+                label="Correo electrónico"
+                name="email"
+                placeholder="Correo electrónico"
+              />
+              <div style={passwordInputContainerStyle}>
+                <TextInput
+                  type={passwordVisible ? 'text' : 'password'}
+                  label="Contraseña"
+                  name="password"
+                  placeholder="Contraseña"
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  style={eyeButtonStyle}
+                >
+                  {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <DefaultButton
+                type="submit"
+                disabled={isSubmitting}
+                content={isSubmitting ? <TailSpin stroke="#000000" /> : 'Registrarse'}
+                secondary
+              />
+            </StyledForm>
+          )}
+        </Formik>
+      </div>
     </div>
   );
 }

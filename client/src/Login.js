@@ -24,6 +24,21 @@ const loginStyle = {
   textAlign: 'center',
 };
 
+const overlayStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  zIndex: 1,
+};
+
+const contentStyle = {
+  position: 'relative',
+  zIndex: 2,
+};
+
 const passwordInputContainerStyle = {
   display: 'flex',
   alignItems: 'center',
@@ -96,53 +111,56 @@ function Login() {
 
   return (
     <div style={loginStyle}>
-      <Formik
-        initialValues={{
-          usuario: "",
-          password: "",
-        }}
-        validationSchema={validationSchema}
-        onSubmit={handleSubmit}
-      >
-        {({ isSubmitting, errors, touched }) => (
-          <StyledForm>
-            <div>
-              <Heading1>Iniciar sesión</Heading1>
-            </div>
-            
-            {errors.general && <StyledErrorMessage>{errors.general}</StyledErrorMessage>}
-            
-            <TextInput
-              type="text"
-              label="Correo electrónico o Usuario"
-              name="usuario"
-              placeholder="Correo electrónico o Usuario"
-            />
-
-            <div style={passwordInputContainerStyle}>
+      <div style={overlayStyle}></div>
+      <div style={contentStyle}>
+        <Formik
+          initialValues={{
+            usuario: "",
+            password: "",
+          }}
+          validationSchema={validationSchema}
+          onSubmit={handleSubmit}
+        >
+          {({ isSubmitting, errors, touched }) => (
+            <StyledForm>
+              <div>
+                <Heading1>Iniciar sesión</Heading1>
+              </div>
+              
+              {errors.general && <StyledErrorMessage>{errors.general}</StyledErrorMessage>}
+              
               <TextInput
-                type={passwordVisible ? 'text' : 'password'}
-                label="Contraseña"
-                name="password"
-                placeholder="Contraseña"
+                type="text"
+                label="Correo electrónico o Usuario"
+                name="usuario"
+                placeholder="Correo electrónico o Usuario"
               />
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                style={eyeButtonStyle}
-              >
-                {passwordVisible ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-            <DefaultButton
-              type="submit"
-              disabled={isSubmitting}
-              content={isSubmitting ? <TailSpin stroke="#000000" /> : 'Iniciar Sesión'}
-              secondary
-            />
-          </StyledForm>
-        )}
-      </Formik>
+
+              <div style={passwordInputContainerStyle}>
+                <TextInput
+                  type={passwordVisible ? 'text' : 'password'}
+                  label="Contraseña"
+                  name="password"
+                  placeholder="Contraseña"
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  style={eyeButtonStyle}
+                >
+                  {passwordVisible ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+              <DefaultButton
+                type="submit"
+                disabled={isSubmitting}
+                content={isSubmitting ? <TailSpin stroke="#000000" /> : 'Iniciar Sesión'}
+                secondary
+              />
+            </StyledForm>
+          )}
+        </Formik>
+      </div>
     </div>
   );
 }

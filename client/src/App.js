@@ -179,25 +179,43 @@ function Root() {
     textAlign: 'center',
     textShadow: '2px 2px 20px black'
   };
+  
+  const overlayStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 1,
+  };
+
+  const contentStyle = {
+    position: 'relative',
+    zIndex: 2,
+  };
 
   return (
     <div style={rootStyle}>
-      <h1 style={{ fontSize: '4rem' }}>Papers Please</h1>
-      <h2>Bienvenido a nuestra aplicación.</h2>
-      
-      <div style={buttonContainerStyle}>
-        <DefaultButton
-          type="button"
-          destination="/login"
-          content='Iniciar Sesión'
-          secondary
-        />
-        <DefaultButton
-          type="button"
-          content='Ir al Registro'
-          destination="/register"
-        />
-      </div>    
+      <div style={overlayStyle}></div>
+      <div style={contentStyle}>
+        <h1 style={{ fontSize: '4rem' }}>Papers Please</h1>
+        <h2>Bienvenido a nuestra aplicación.</h2>
+        
+        <div style={buttonContainerStyle}>
+          <DefaultButton
+            type="button"
+            destination="/login"
+            content='Iniciar Sesión'
+            secondary
+          />
+          <DefaultButton
+            type="button"
+            content='Ir al Registro'
+            destination="/register"
+          />
+        </div>    
+      </div>
     </div>
   );
 }
