@@ -175,6 +175,111 @@ app.post('/api/posts', verificarAutenticacion, (req, res) => {
 });
 
 
+// Me traigo todos los posteo
+app.get('/api/posts', (req, res) => {
+    const sql = `
+        SELECT posts.*, users.user_name 
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        ORDER BY posts.created_at DESC
+    `;
+    
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
+    });
+});
+
+// Traigo un posteo individual
+app.get('/api/posts/:id', (req, res) => {
+    const sql = `
+        SELECT posts.*, users.user_name 
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        WHERE posts.id = ?
+    `;
+    
+    db.get(sql, [req.params.id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        res.json(row);
+    });
+});
+
+// Traigo posteos del usuario loggeado
+app.get('/api/posts/user/me', verificarAutenticacion, (req, res) => {
+    const sql = `
+        SELECT posts.*, users.user_name 
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        WHERE posts.user_id = ? 
+        ORDER BY posts.created_at DESC
+    `;
+    
+    db.all(sql, [req.session.usuarioId], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
+    });
+});
+
+// Actualizo un posteo
+app.put('/api/posts/:id', verificarAutenticacion, (req, res) => {
+    const { title, body } = req.body;
+    
+    // Valido que el posteo pertenezca al usuario loggeado
+    db.get('SELECT user_id FROM posts WHERE id = ?', [req.params.id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        if (row.user_id !== req.session.usuarioId) {
+            return res.status(403).json({ error: 'Not authorized to update this post' });
+        }
+        
+        const sql = `UPDATE posts SET title = ?, body = ? WHERE id = ?`;
+        db.run(sql, [title, body, req.params.id], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ message: 'Post updated successfully' });
+        });
+    });
+});
+
+// Borro un posteo
+app.delete('/api/posts/:id', verificarAutenticacion, (req, res) => {
+    // Verifico que el posteo a borrar pertenezca al usuario loggeado
+    db.get('SELECT user_id FROM posts WHERE id = ?', [req.params.id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        if (row.user_id !== req.session.usuarioId) {
+            return res.status(403).json({ error: 'Not authorized to delete this post' });
+        }
+        
+        const sql = `DELETE FROM posts WHERE id = ?`;
+        db.run(sql, [req.params.id], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ message: 'Post deleted successfully' });
+        });
+    });
+});
+
 
 
 // Cierra la conexión a la base de datos al finalizar el servidor

@@ -5,9 +5,12 @@ import Register from './Register';
 import Login from './Login';
 import Home from './Home';
 import Publication from './Publication';
+import PostList from './PostList';
+import SinglePost from './SinglePost';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
 import DefaultButton from './components/button/DefaultButton';
+
 const Navbar = styled.nav`
   display: flex;
   justify-content: space-between;
@@ -186,6 +189,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/home" element={<Home />} />
         <Route path="/publication" element={<Publication />} />
+        <Route path="/posts" element={<PostList />} />
+        <Route path="/post/:id" element={<SinglePost />} />
         <Route path="/" element={<Root />} />
       </Routes>
     </Router>
