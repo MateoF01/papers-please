@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom';
 import Register from './Register';
 import Login from './Login';
 import Home from './Home';
@@ -14,6 +13,7 @@ import MyPosts from './MyPosts';
 import PostListToValidate from './PostListToValidate';
 import AdminRoute from './components/routes/AdminRoute';
 import AuthenticatedRoute from './components/routes/AuthenticatedRoute';
+import { AuthContext, AuthProvider } from './assets/AuthContext';
 
 const Navbar = styled.nav`
   display: flex;
@@ -124,59 +124,49 @@ const buttonContainerStyle = {
 };
 
 
-
-
 function NavbarContent() {
+  const { isAuthenticated, isAdmin, handleLogout, checkAuthentication } = useContext(AuthContext);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
+
+  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
   const handleNavigateToPublication = () => {
     navigate('/publication');
   };
-
-  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-
-  const handleLogout = () => {
-    axios.post('http://localhost:8080/api/logout', {}, { withCredentials: true })
-      .then(() => {
-        navigate('/');
-      })
-      .catch(() => {
-        setError('Error al cerrar la sesión');
-      });
+  
+  const handleLogoutClick = async () => {
+    await handleLogout(); 
+    navigate('/'); 
   };
 
-  if (error) {
-    return <p>{error}</p>;
-  }
-
-  if (location.pathname === '/home' || location.pathname === '/publication') {
-    return (
-      <>
-        <NavbarBrand to="/home">Papers Please</NavbarBrand>
-        <NavbarRight>
-          <NavbarButton onClick={handleNavigateToPublication}>Crear Publicación</NavbarButton>
-          <LogoutButton onClick={handleLogout}>Cerrar Sesión</LogoutButton>
-        </NavbarRight>
-      </>
-    );
-  }
+  useEffect(() => {
+    checkAuthentication(); 
+  }, [isAuthenticated, isAdmin, checkAuthentication]); 
 
   return (
     <>
-      <NavbarBrand to="/">Papers Please</NavbarBrand>
+      <NavbarBrand to="/home">Papers Please</NavbarBrand>
       <NavbarRight>
-        <DropdownContainer>
-          <DropdownButton onClick={toggleDropdown}>
-            Cuenta
-          </DropdownButton>
-          <DropdownMenu $isOpen={isDropdownOpen}>
-            <DropdownItem to="/register" onClick={toggleDropdown}>Registro</DropdownItem>
-            <DropdownItem to="/login" onClick={toggleDropdown}>Iniciar Sesión</DropdownItem>
-          </DropdownMenu>
-        </DropdownContainer>
+        {isAuthenticated ? (
+          <>
+            <NavbarButton onClick={handleNavigateToPublication}>Crear Publicación</NavbarButton>
+            <NavbarButton onClick={() => navigate('/posts')}>Ver Publicaciones</NavbarButton>
+            <NavbarButton onClick={() => navigate('/my-posts')}>Ver Mis Publicaciones</NavbarButton>
+            {isAdmin === 1 && (
+              <NavbarButton onClick={() => navigate('/posts-to-validate')}>Validar Publicaciones</NavbarButton>
+            )}
+            <LogoutButton onClick={handleLogoutClick}>Cerrar Sesión</LogoutButton>
+          </>
+        ) : (
+          <DropdownContainer>
+            <DropdownButton onClick={toggleDropdown}>Cuenta</DropdownButton>
+            <DropdownMenu $isOpen={isDropdownOpen}>
+              <DropdownItem to="/register" onClick={toggleDropdown}>Registro</DropdownItem>
+              <DropdownItem to="/login" onClick={toggleDropdown}>Iniciar Sesión</DropdownItem>
+            </DropdownMenu>
+          </DropdownContainer>
+        )}
       </NavbarRight>
     </>
   );
@@ -184,87 +174,75 @@ function NavbarContent() {
 
 function App() {
   return (
-    <Router>
-      <Navbar>
-        <NavbarContent />
-      </Navbar>
-      <Routes>
-        {/* Rutas abiertas */}
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        
-        {/* Rutas protegidas por autenticación */}
-        <Route path="/home" element={<AuthenticatedRoute element={Home} />} />
-        <Route path="/publication" element={<AuthenticatedRoute element={Publication} />} />
-        <Route path="/posts" element={<AuthenticatedRoute element={PostList} />} />
-        <Route path="/my-posts" element={<AuthenticatedRoute element={MyPosts} />} />
-        <Route path="/post/:id" element={<AuthenticatedRoute element={SinglePost} />} />
-        
-        {/* Ruta protegida para admin */}
-        <Route path="/posts-to-validate" element={<AdminRoute element={PostListToValidate} />} />
-        
-        <Route path="/" element={<Root />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Navbar>
+          <NavbarContent />
+        </Navbar>
+        <Routes>
+          {/* Rutas abiertas */}
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          
+          {/* Rutas protegidas por autenticación */}
+          <Route path="/home" element={<AuthenticatedRoute element={Home} />} />
+          <Route path="/publication" element={<AuthenticatedRoute element={Publication} />} />
+          <Route path="/posts" element={<AuthenticatedRoute element={PostList} />} />
+          <Route path="/my-posts" element={<AuthenticatedRoute element={MyPosts} />} />
+          <Route path="/post/:id" element={<AuthenticatedRoute element={SinglePost} />} />
+          
+          {/* Ruta protegida para admin */}
+          <Route path="/posts-to-validate" element={<AdminRoute element={PostListToValidate} />} />
+          
+          <Route path="/" element={<Root />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
+const RootContainer = styled.div`
+  background-image: url(${backgroundImage});
+  background-size: cover;
+  background-position: center;
+  height: 100vh;
+  color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  text-shadow: 2px 2px 20px black;
+  position: relative;
+  z-index: 1;
+`;
+
+const Overlay = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+`;
+
 function Root() {
-  const rootStyle = {
-    backgroundImage: `url(${backgroundImage})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    height: '100vh',
-    color: '#f5f5f5',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    textAlign: 'center',
-    textShadow: '2px 2px 20px black'
-  };
-
-  const overlayStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    zIndex: 1,
-  };
-
-  const contentStyle = {
-    position: 'relative',
-    zIndex: 2,
-  };
-  
+  const { isAuthenticated, loading } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuthentication = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/api/user', { withCredentials: true });
-        if (response.data) {
-          navigate('/home');
-        } else {
-          setLoading(false);
-        }
-      } catch (err) {
-        setLoading(false); 
-      }
-    };
+    if (isAuthenticated) {
+      navigate('/home');
+    }
+  }, [isAuthenticated, navigate]);
 
-    checkAuthentication();
-  }, [navigate]);
-  
-  if (loading) return <div>Cargando...</div>
+  if (loading) return <div>Cargando...</div>;
 
   return (
-    <div style={rootStyle}>
-      <div style={overlayStyle}></div>
-      <div style={contentStyle}>
+    <RootContainer>
+      <Overlay />
+      <div>
         <h1 style={{ fontSize: '4rem' }}>Papers Please</h1>
         <h2>Bienvenido a nuestra aplicación.</h2>
         
@@ -282,7 +260,7 @@ function Root() {
           />
         </div>    
       </div>
-    </div>
+    </RootContainer>
   );
 }
 

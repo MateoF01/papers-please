@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import backgroundImage from './background.png';
@@ -10,6 +10,7 @@ import * as Yup from "yup";
 import { Heading1 } from './components/text/Heading';
 import DefaultButton from "./components/button/DefaultButton";
 import TextInput from './components/form/input/text';
+import { AuthContext } from './assets/AuthContext';
 
 const loginStyle = {
   backgroundImage: `url(${backgroundImage})`,
@@ -83,6 +84,7 @@ const StyledErrorMessage = styled.div`
 function Login() {
   const [passwordVisible, setPasswordVisible] = useState(false); // Estado para alternar visibilidad de la contraseña
   const navigate = useNavigate();
+  const { checkAuthentication } = useContext(AuthContext);
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
@@ -97,6 +99,7 @@ function Login() {
     axios.post('http://localhost:8080/api/login', values, { withCredentials: true })
       .then(response => {
         setSubmitting(false);
+        checkAuthentication(); // Llama a checkAuthentication para actualizar el contexto de autenticación
         navigate('/home');
       })
       .catch(error => {

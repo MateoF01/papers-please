@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import BackgroundImage from './background.png';
 import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import DefaultButton from './components/button/DefaultButton';
+import { AuthContext } from './assets/AuthContext';
 
 function Home() {
   const [user, setUser] = useState(null);
@@ -11,30 +12,29 @@ function Home() {
   const [loadingButton, setLoadingButton] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  
+  const { isAuthenticated, handleLogout } = useContext(AuthContext);
 
   useEffect(() => {
-    axios.get('http://localhost:8080/api/user', { withCredentials: true })
-      .then(response => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/user', { withCredentials: true });
         setUser(response.data);
         setLoading(false);
-      })
-      .catch(error => {
+      } catch (error) {
         setError('Error al obtener la información del usuario');
         setLoading(false);
-      });
-  }, []);
+      }
+    };
 
-  const handleLogout = () => {
+    fetchUser();
+  }, [isAuthenticated]);
+
+  const handleLogoutClick = async () => {
     setLoadingButton(true);
-    axios.post('http://localhost:8080/api/logout', {}, { withCredentials: true })
-      .then(() => {
-        setLoadingButton(false);
-        navigate('/');
-      })
-      .catch(() => {
-        setLoadingButton(false);
-        setError('Error al cerrar la sesión');
-      });
+    await handleLogout();
+    setLoadingButton(false);
+    navigate('/');
   };
 
   const handleCreatePublication = () => {
@@ -102,7 +102,7 @@ function Home() {
           <DefaultButton
             type="button"
             disabled={loadingButton}
-            handleClick={handleLogout}
+            handleClick={handleLogoutClick}
             content={loadingButton ? <TailSpin stroke="#000000" /> : 'Cerrar Sesión'}
             secondary
           />
