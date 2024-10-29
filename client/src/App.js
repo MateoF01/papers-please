@@ -10,6 +10,7 @@ import SinglePost from './SinglePost';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
 import DefaultButton from './components/button/DefaultButton';
+import MyPosts from './MyPosts';
 
 const Navbar = styled.nav`
   display: flex;
@@ -190,6 +191,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/publication" element={<Publication />} />
         <Route path="/posts" element={<PostList />} />
+        <Route path="/my-posts" element={<MyPosts />} />
         <Route path="/post/:id" element={<SinglePost />} />
         <Route path="/" element={<Root />} />
       </Routes>
