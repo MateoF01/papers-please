@@ -42,8 +42,7 @@ app.post('/api/register', (req, res) => {
     const { userName, email, password } = req.body;
 
     // Validación de la contraseña
-    const passwordRegex = /^(?=.*[a-zA-ZÀ-ÿ])(?=.*[A-ZÀ-ÿ])(?=.*\d)(?=.*[@$!%*?&])[A-Za-zÀ-ÿ\d@$!%*?&]{12,}$/;
-
+    const passwordRegex = /^(?=.*[a-zA-ZÀ-ÿ])(?=.*[A-ZÀ-ÿ])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{12,}$/;
     if (!passwordRegex.test(password)) {
         return res.status(400).json({
             error: 'La contraseña debe tener al menos 12 caracteres, una mayúscula, una minúscula, un número y un símbolo.'
