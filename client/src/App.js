@@ -12,6 +12,8 @@ import styled from 'styled-components';
 import DefaultButton from './components/button/DefaultButton';
 import MyPosts from './MyPosts';
 import PostListToValidate from './PostListToValidate';
+import AdminRoute from './components/routes/AdminRoute';
+import AuthenticatedRoute from './components/routes/AuthenticatedRoute';
 
 const Navbar = styled.nav`
   display: flex;
@@ -187,14 +189,20 @@ function App() {
         <NavbarContent />
       </Navbar>
       <Routes>
+        {/* Rutas abiertas */}
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/publication" element={<Publication />} />
-        <Route path="/posts" element={<PostList />} />
-        <Route path="/my-posts" element={<MyPosts />} />
-        <Route path="/posts-to-validate" element={<PostListToValidate />} />
-        <Route path="/post/:id" element={<SinglePost />} />
+        
+        {/* Rutas protegidas por autenticación */}
+        <Route path="/home" element={<AuthenticatedRoute element={Home} />} />
+        <Route path="/publication" element={<AuthenticatedRoute element={Publication} />} />
+        <Route path="/posts" element={<AuthenticatedRoute element={PostList} />} />
+        <Route path="/my-posts" element={<AuthenticatedRoute element={MyPosts} />} />
+        <Route path="/post/:id" element={<AuthenticatedRoute element={SinglePost} />} />
+        
+        {/* Ruta protegida para admin */}
+        <Route path="/posts-to-validate" element={<AdminRoute element={PostListToValidate} />} />
+        
         <Route path="/" element={<Root />} />
       </Routes>
     </Router>
