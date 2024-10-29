@@ -52,7 +52,12 @@ const Button = styled.button`
   }
   
   &.delete {
-    background-color: #f44336;
+    background-color: #dc3545;
+    color: white;
+  }
+
+  &.validate {
+    background-color: #28a745;
     color: white;
   }
 `;
@@ -84,7 +89,8 @@ function SinglePost() {
   const [editedTitle, setEditedTitle] = useState('');
   const [editedBody, setEditedBody] = useState('');
   const [editedImage, setEditedImage] = useState(null);
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [errorDetails, setErrorDetails] = useState(null); // Added for error details
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -97,7 +103,7 @@ function SinglePost() {
         setPost(response.data);
         
         const userResponse = await axios.get(`http://localhost:8080/api/user`, { withCredentials: true });
-        setCurrentUserId(userResponse.data.id); 
+        setCurrentUser(userResponse.data);
         
         setEditedTitle(response.data.title);
         setEditedBody(response.data.body);
@@ -137,9 +143,6 @@ function SinglePost() {
         }
       });
       
-      //const newImageUrl = editedImage ? `${URL.createObjectURL(editedImage)}?${new Date().getTime()}` : post.image;
-  
-      //TODO: Reemplazar URL cuando deployemos el sitio
       const response = await axios.get(`http://localhost:8080/api/posts/${id}`, { withCredentials: true });
       setPost(response.data);
       setIsEditing(false);
@@ -152,18 +155,43 @@ function SinglePost() {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
       try {
         await axios.delete(`http://localhost:8080/api/posts/${id}`, {
-          withCredentials: true
+          withCredentials: true,
+          data: { isAdmin: currentUser.isAdmin }
         });
         navigate('/home');
       } catch (err) {
+        console.error('Error details:', err.response ? err.response.data : err.message);
         setError('Error al eliminar la publicación');
+        setErrorDetails(err.response ? err.response.data : err.message); //Added to store error details
       }
     }
   };
 
+  const handleValidate = async () => {
+    try {
+      await axios.put(`http://localhost:8080/api/posts/${id}/validate`, {}, {
+        withCredentials: true
+      });
+      setPost({ ...post, validated: 1 });
+    } catch (err) {
+      setError('Error al validar la publicación');
+    }
+  };
+
   if (loading) return <div>Cargando...</div>;
-  if (error) return <div>{error}</div>;
+  if (error) return (
+    <div>
+      <p>{error}</p>
+      {errorDetails && <p>Details: {errorDetails}</p>} {/* Updated error display */}
+    </div>
+  );
   if (!post) return <div>Publicación no encontrada</div>;
+
+  const isAdmin = currentUser && currentUser.isAdmin === 1;
+  const isPostOwner = currentUser && currentUser.id === post.user_id;
+  const canEdit = isPostOwner;
+  const canDelete = isAdmin || isPostOwner;
+  const canValidate = isAdmin && post.validated === 0;
 
   return (
     <PostContainer>
@@ -197,12 +225,12 @@ function SinglePost() {
             </PostMeta>
             {post.image && <PostImage src={`http://localhost:8080${post.image}`} alt="Imagen de la publicación" />}
             <PostBody>{post.body}</PostBody>
-            {currentUserId === post.user_id && (
-              <div style={{ marginTop: '20px' }}>
-                <Button className="edit" onClick={handleEdit}>Editar</Button>
-                <Button className="delete" onClick={handleDelete}>Eliminar</Button>
-              </div>
-            )}
+            <div style={{ marginTop: '20px' }}>
+              {canEdit && <Button className="edit" onClick={handleEdit}>Editar</Button>}
+              {canValidate && <Button className="validate" onClick={handleValidate}>Validar</Button>}
+              {canDelete && <Button className="delete" onClick={handleDelete}>Eliminar</Button>}
+              
+            </div>
           </>
         )}
       </PostContent>

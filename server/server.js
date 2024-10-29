@@ -330,20 +330,23 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
 
 // Borro un posteo
 app.delete('/api/posts/:id', verificarAutenticacion, (req, res) => {
-    // Verifico que el posteo a borrar pertenezca al usuario loggeado
-    db.get('SELECT user_id FROM posts WHERE id = ?', [req.params.id], (err, row) => {
+    const postId = req.params.id;
+    const userId = req.session.usuarioId;
+    const isAdmin = req.body.isAdmin === 1;
+
+    db.get('SELECT user_id FROM posts WHERE id = ?', [postId], (err, row) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
         if (!row) {
             return res.status(404).json({ error: 'Post not found' });
         }
-        if (row.user_id !== req.session.usuarioId) {
+        if (row.user_id !== userId && !isAdmin) {
             return res.status(403).json({ error: 'Not authorized to delete this post' });
         }
         
         const sql = `DELETE FROM posts WHERE id = ?`;
-        db.run(sql, [req.params.id], function(err) {
+        db.run(sql, [postId], function(err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }

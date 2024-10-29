@@ -72,7 +72,7 @@ function PostList() {
 
   return (
     <PostContainer>
-      {posts.map(post => (
+      {posts.filter(post => post.validated === 1).map(post => (
         <PostLink to={`/post/${post.id}`} key={post.id}>
           <PostCard>
             <PostTitle>{post.title}</PostTitle>
@@ -80,9 +80,6 @@ function PostList() {
               Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
             </PostMeta>
             <p>{post.body.substring(0, 150)}...</p>
-            {post.validated === 0 && (
-              <ValidationMessage>Pendiente de validación</ValidationMessage>
-            )}
           </PostCard>
         </PostLink>
       ))}

@@ -1,78 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import styled from 'styled-components';
 import { Link } from 'react-router-dom';
 
-const PostContainer = styled.div`
-  padding: 80px 20px 20px 20px;
-  max-width: 800px;
-  margin: 0 auto;
-`;
+const styles = {
+  pageContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    minHeight: '100vh',
+    paddingTop: '80px', // Adjust this value based on your navbar height
+    backgroundColor: '#f0f2f5',
+  },
+  container: {
+    width: '100%',
+    maxWidth: '800px',
+    padding: '20px',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    padding: '20px',
+    marginBottom: '20px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+  },
+  title: {
+    margin: '0 0 10px 0',
+    color: '#333',
+  },
+  meta: {
+    color: '#666',
+    fontSize: '0.9em',
+    marginBottom: '10px',
+  },
+  buttonContainer: {
+    display: 'flex',
+    justifyContent: 'flex-start',
+    gap: '10px',
+    marginTop: '10px',
+  },
+  validateButton: {
+    backgroundColor: '#28a745',
+    color: 'white',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+    color: 'white',
+    border: 'none',
+    padding: '8px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  error: {
+    color: 'red',
+    padding: '10px',
+  },
+  validationMessage: {
+    color: 'red',
+    fontWeight: 'bold',
+    marginTop: '10px',
+  },
+};
 
-const PostCard = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-
-  &:hover {
-    transform: translateY(-2px);
-  }
-`;
-
-const PostTitle = styled.h2`
-  margin: 0 0 10px 0;
-  color: #333;
-`;
-
-const PostMeta = styled.div`
-  color: #666;
-  font-size: 0.9em;
-  margin-bottom: 10px;
-`;
-
-const ValidationMessage = styled.div`
-  color: red;
-  font-weight: bold;
-  margin-top: 10px;
-`;
-
-const ValidateButton = styled.button`
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
-
-  &:hover {
-    background-color: #218838;
-  }
-`;
-
-function PostListToValidate() {
+export default function PostListToValidate() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchPostsAndUser = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/posts/to-validate', {
-          withCredentials: true
-        });
-        setPosts(response.data);
+        const [postsResponse, userResponse] = await Promise.all([
+          axios.get('http://localhost:8080/api/posts/to-validate', { withCredentials: true }),
+          axios.get('http://localhost:8080/api/user', { withCredentials: true })
+        ]);
+        setPosts(postsResponse.data);
+        setCurrentUser(userResponse.data);
         setLoading(false);
       } catch (err) {
-        setError('Error al cargar las publicaciones para validar');
+        setError('Error loading data');
         setLoading(false);
       }
     };
 
-    fetchPosts();
+    fetchPostsAndUser();
   }, []);
 
   const handleValidatePost = async (postId) => {
@@ -84,36 +99,67 @@ function PostListToValidate() {
         post.id === postId ? { ...post, validated: 1 } : post
       ));
     } catch (err) {
-      console.error("Error al validar la publicación", err);
+      console.error("Error validating the post", err);
+      setError('Error validating the post');
     }
   };
 
-  if (loading) return <div>Cargando...</div>;
-  if (error) return <div>{error}</div>;
+  const handleDeletePost = async (postId) => {
+    if (!currentUser) {
+      setError('User information not available');
+      return;
+    }
+    try {
+      await axios.delete(`http://localhost:8080/api/posts/${postId}`, {
+        withCredentials: true,
+        data: { isAdmin: currentUser.isAdmin }
+      });
+      setPosts(posts.filter(post => post.id !== postId));
+    } catch (err) {
+      console.error("Error deleting the post", err);
+      setError('Error deleting the post: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  if (loading) return <div style={styles.pageContainer}><div style={styles.container}>Loading...</div></div>;
+  if (error) return <div style={styles.pageContainer}><div style={styles.container}><div style={styles.error}>{error}</div></div></div>;
 
   return (
-    <PostContainer>
-      {posts.map(post => (
-        <PostCard key={post.id}>
-          <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <PostTitle>{post.title}</PostTitle>
-          </Link>
-          <PostMeta>
-            Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
-          </PostMeta>
-          <p>{post.body.substring(0, 150)}...</p>
-          {post.validated === 0 && (
-            <>
-              <ValidationMessage>Pendiente de validación</ValidationMessage>
-              <ValidateButton onClick={() => handleValidatePost(post.id)}>
-                Validar
-              </ValidateButton>
-            </>
-          )}
-        </PostCard>
-      ))}
-    </PostContainer>
+    <div style={styles.pageContainer}>
+      <div style={styles.container}>
+        {posts.map(post => (
+          <div key={post.id} style={styles.card}>
+            <h2 style={styles.title}>
+              <Link to={`/post/${post.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                {post.title}
+              </Link>
+            </h2>
+            <div style={styles.meta}>
+              By {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
+            </div>
+            <p>{post.body.substring(0, 150)}...</p>
+            {post.validated === 0 && (
+              <div style={styles.validationMessage}>Validación pendiente</div>
+            )}
+            <div style={styles.buttonContainer}>
+              {post.validated === 0 && (
+                <button 
+                  style={styles.validateButton}
+                  onClick={() => handleValidatePost(post.id)}
+                >
+                  Validar
+                </button>
+              )}
+              <button 
+                style={styles.deleteButton}
+                onClick={() => handleDeletePost(post.id)}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
-
-export default PostListToValidate;
