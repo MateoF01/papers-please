@@ -13,7 +13,7 @@ function Home() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get('http://localhost:8080/api/user',  { withCredentials: true })
+    axios.get('http://localhost:8080/api/user', { withCredentials: true })
       .then(response => {
         setUser(response.data);
         setLoading(false);
@@ -25,20 +25,24 @@ function Home() {
   }, []);
 
   const handleLogout = () => {
-    setLoadingButton(true)
+    setLoadingButton(true);
     axios.post('http://localhost:8080/api/logout', {}, { withCredentials: true })
-    .then(() => {
-        setLoadingButton(false)
+      .then(() => {
+        setLoadingButton(false);
         navigate('/');
       })
       .catch(() => {
-        setLoadingButton(false)
+        setLoadingButton(false);
         setError('Error al cerrar la sesión');
       });
   };
 
   const handleCreatePublication = () => {
     navigate('/publication');
+  };
+
+  const handleAdminPanel = () => {
+    navigate('/posts-to-validate');
   };
 
   if (loading) {
@@ -93,20 +97,28 @@ function Home() {
     <div style={HomeStyle}>
       <div style={overlayStyle}></div>
       <div style={contentStyle}>
-      <h1>Bienvenido, {user.user_name}</h1>
-      <div style={buttonContainerStyle}>
-        <DefaultButton
-          type="button"
-          disabled={loadingButton}
-          handleClick={handleLogout}
-          content={loadingButton ? <TailSpin stroke="#000000" /> : 'Cerrar Sesión'}
-          secondary     
-        />
-        <DefaultButton
-          type="button"
-          handleClick={handleCreatePublication}
-          content="Crear Publicación"
-        />
+        <h1>Bienvenido, {user.user_name}</h1>
+        <div style={buttonContainerStyle}>
+          <DefaultButton
+            type="button"
+            disabled={loadingButton}
+            handleClick={handleLogout}
+            content={loadingButton ? <TailSpin stroke="#000000" /> : 'Cerrar Sesión'}
+            secondary
+          />
+          <DefaultButton
+            type="button"
+            handleClick={handleCreatePublication}
+            content="Crear Publicación"
+          />
+          {/* Mostrar botón extra si el usuario es administrador */}
+          {user.isAdmin === 1 && (
+            <DefaultButton
+              type="button"
+              handleClick={handleAdminPanel}
+              content="Panel de Validación"
+            />
+          )}
         </div>
       </div>
     </div>

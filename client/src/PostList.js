@@ -39,6 +39,12 @@ const PostLink = styled(Link)`
   display: block;
 `;
 
+const ValidationMessage = styled.div`
+  color: red;
+  font-weight: bold;
+  margin-top: 10px;
+`;
+
 function PostList() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +80,9 @@ function PostList() {
               Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
             </PostMeta>
             <p>{post.body.substring(0, 150)}...</p>
+            {post.validated === 0 && (
+              <ValidationMessage>Pendiente de validación</ValidationMessage>
+            )}
           </PostCard>
         </PostLink>
       ))}

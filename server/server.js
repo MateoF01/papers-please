@@ -205,9 +205,53 @@ app.get('/api/posts', (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
+
+        console.log(rows)
         res.json(rows);
     });
 });
+
+
+// Obtener publicaciones pendientes de validación
+app.get('/api/posts/to-validate', (req, res) => {
+    const sql = `
+        SELECT posts.*, users.user_name 
+        FROM posts 
+        JOIN users ON posts.user_id = users.id 
+        WHERE posts.validated = 0 
+        ORDER BY posts.created_at DESC
+    `;
+    
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
+    });
+});
+
+// Validar una publicación específica
+app.put('/api/posts/:postId/validate', (req, res) => {
+    const { postId } = req.params;
+    const sql = `
+        UPDATE posts 
+        SET validated = 1 
+        WHERE id = ?
+    `;
+    
+    db.run(sql, [postId], function (err) {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Publicación no encontrada' });
+        }
+
+        res.json({ message: 'Publicación validada exitosamente' });
+    });
+});
+
 
 // Traigo un posteo individual
 app.get('/api/posts/:id', (req, res) => {
