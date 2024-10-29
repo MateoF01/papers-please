@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
-
 import { Formik, Form } from "formik";
 import * as Yup from "yup";
 import { Heading1 } from './components/text/Heading';
 import { Paragraph1 } from './components/text/Paragraph';
 import DefaultButton from "./components/button/DefaultButton";
 import TextInput from './components/form/input/text';
+import { AuthContext } from './assets/AuthContext'; // Importo AuthContext
 
 const registerStyle = {
   backgroundImage: `url(${backgroundImage})`,
@@ -85,6 +85,7 @@ const StyledErrorMessage = styled.div`
 function Register() {
   const [passwordVisible, setPasswordVisible] = useState(false); // Estado para visibilidad de la contraseña
   const navigate = useNavigate();
+  const { checkAuthentication } = useContext(AuthContext); // Use AuthContext
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible); // Alternamos visibilidad
@@ -109,6 +110,7 @@ function Register() {
     axios.post('http://localhost:8080/api/register', values, { withCredentials: true })
       .then(() => {
         setSubmitting(false);
+        checkAuthentication(); // checkeo auth después de registrarme
         navigate('/home');
       })
       .catch(error => {
