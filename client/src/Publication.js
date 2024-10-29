@@ -9,6 +9,7 @@ function Publication() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState(null);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -17,7 +18,19 @@ function Publication() {
     setLoading(true);
     setError(null);
 
-    axios.post('http://localhost:8080/api/posts', { title, body }, { withCredentials: true })
+    const formData = new FormData(); 
+    formData.append('title', title);
+    formData.append('body', body);
+    if (image) {
+      formData.append('image', image); 
+    }
+
+    axios.post('http://localhost:8080/api/posts', formData, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
       .then((response) => {
         console.log('Publication created successfully:', response.data);
         setLoading(false);
@@ -29,6 +42,10 @@ function Publication() {
         console.error('Error creating publication:', error.response?.data || error.message);
         setError(error.response?.data?.error || 'Error al crear la publicación. Por favor, inténtalo de nuevo.');
       });
+  };
+
+  const handleImageChange = (e) => {
+    setImage(e.target.files[0]); 
   };
 
   const PublicationStyle = {
@@ -93,6 +110,12 @@ function Publication() {
             placeholder="Contenido"
             required
             style={{...InputStyle, height: '200px'}}
+          />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            style={InputStyle}
           />
           <div style={ButtonContainerStyle}>
             <DefaultButton

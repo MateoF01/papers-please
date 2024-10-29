@@ -20,6 +20,20 @@ app.use(session({
     cookie: { secure: false }   
 }));
 
+app.use('/uploads', express.static('uploads'));
+
+const multer = require('multer');
+const path = require('path');
+
+const storage = multer.diskStorage({
+    destination: './uploads', 
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage });
+
 
 //--------------- ENDPOINTS (ORDENAR) ----------------------
 
@@ -146,19 +160,20 @@ app.post('/api/logout', (req, res) => {
 
 
 
-app.post('/api/posts', verificarAutenticacion, (req, res) => {
+app.post('/api/posts', verificarAutenticacion, upload.single('image'), (req, res) => {
     console.log('Received post request:', req.body);
     console.log('User ID from session:', req.session.usuarioId);
     const { title, body } = req.body;
     const userId = req.session.usuarioId;
+    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
     if (!title || !body) {
         return res.status(400).json({ error: 'Title and body are required' });
     }
 
-    const sql = `INSERT INTO posts (user_id, title, body, created_at) VALUES (?, ?, ?, datetime('now'))`;
+    const sql = `INSERT INTO posts (user_id, title, body, image, created_at) VALUES (?, ?, ?, ?, datetime('now'))`;
     
-    db.run(sql, [userId, title, body], function(err) {
+    db.run(sql, [userId, title, body, imagePath], function(err) {
         if (err) {
             console.error('Error creating post:', err);
             return res.status(500).json({ error: 'Error al crear la publicación' });
@@ -169,6 +184,7 @@ app.post('/api/posts', verificarAutenticacion, (req, res) => {
             user_id: userId,
             title,
             body,
+            image: imagePath,
             created_at: new Date().toISOString()
         });
     });
