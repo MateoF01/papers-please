@@ -84,6 +84,7 @@ function SinglePost() {
   const [editedTitle, setEditedTitle] = useState('');
   const [editedBody, setEditedBody] = useState('');
   const [editedImage, setEditedImage] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -94,6 +95,10 @@ function SinglePost() {
           withCredentials: true
         });
         setPost(response.data);
+        
+        const userResponse = await axios.get(`http://localhost:8080/api/user`, { withCredentials: true });
+        setCurrentUserId(userResponse.data.id); 
+        
         setEditedTitle(response.data.title);
         setEditedBody(response.data.body);
         setLoading(false);
@@ -192,10 +197,12 @@ function SinglePost() {
             </PostMeta>
             {post.image && <PostImage src={`http://localhost:8080${post.image}`} alt="Imagen de la publicación" />}
             <PostBody>{post.body}</PostBody>
-            <div style={{ marginTop: '20px' }}>
-              <Button className="edit" onClick={handleEdit}>Editar</Button>
-              <Button className="delete" onClick={handleDelete}>Eliminar</Button>
-            </div>
+            {currentUserId === post.user_id && (
+              <div style={{ marginTop: '20px' }}>
+                <Button className="edit" onClick={handleEdit}>Editar</Button>
+                <Button className="delete" onClick={handleDelete}>Eliminar</Button>
+              </div>
+            )}
           </>
         )}
       </PostContent>
