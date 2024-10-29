@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Route, Routes, Link, useLocation, useNavigate } from 'react-router-dom';
 import Register from './Register';
@@ -238,6 +238,28 @@ function Root() {
     position: 'relative',
     zIndex: 2,
   };
+  
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/user', { withCredentials: true });
+        if (response.data) {
+          navigate('/home');
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        setLoading(false); 
+      }
+    };
+
+    checkAuthentication();
+  }, [navigate]);
+  
+  if (loading) return <div>Cargando...</div>
 
   return (
     <div style={rootStyle}>
