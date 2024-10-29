@@ -24,6 +24,7 @@ app.use('/uploads', express.static('uploads'));
 
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const storage = multer.diskStorage({
     destination: './uploads', 
@@ -247,11 +248,12 @@ app.get('/api/posts/user/me', verificarAutenticacion, (req, res) => {
 });
 
 // Actualizo un posteo
-app.put('/api/posts/:id', verificarAutenticacion, (req, res) => {
+app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, res) => {
     const { title, body } = req.body;
-    
+    const newImagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
     // Valido que el posteo pertenezca al usuario loggeado
-    db.get('SELECT user_id FROM posts WHERE id = ?', [req.params.id], (err, row) => {
+    db.get('SELECT * FROM posts WHERE id = ?', [req.params.id], (err, row) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -261,12 +263,22 @@ app.put('/api/posts/:id', verificarAutenticacion, (req, res) => {
         if (row.user_id !== req.session.usuarioId) {
             return res.status(403).json({ error: 'Not authorized to update this post' });
         }
-        
-        const sql = `UPDATE posts SET title = ?, body = ? WHERE id = ?`;
-        db.run(sql, [title, body, req.params.id], function(err) {
+
+        // Actualizar la publicación en la base de datos
+        const sql = `UPDATE posts SET title = ?, body = ?, image = COALESCE(?, image) WHERE id = ?`;
+        db.run(sql, [title, body, newImagePath, req.params.id], function(err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
+
+            // Eliminar la imagen anterior si se ha cargado una nueva
+            if (newImagePath && row.image) {
+                const oldImagePath = `./uploads/${path.basename(row.image)}`;
+                fs.unlink(oldImagePath, (unlinkErr) => {
+                    if (unlinkErr) console.error('Error deleting old image:', unlinkErr);
+                });
+            }
+
             res.json({ message: 'Post updated successfully' });
         });
     });

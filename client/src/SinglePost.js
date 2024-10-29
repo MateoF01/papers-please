@@ -32,6 +32,12 @@ const PostBody = styled.div`
   color: #333;
 `;
 
+const PostImage = styled.img`
+  max-width: 100%;
+  border-radius: 8px;
+  margin-bottom: 20px;
+`;
+
 const Button = styled.button`
   padding: 8px 16px;
   margin-right: 10px;
@@ -77,6 +83,7 @@ function SinglePost() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedBody, setEditedBody] = useState('');
+  const [editedImage, setEditedImage] = useState(null);
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -103,15 +110,33 @@ function SinglePost() {
     setIsEditing(true);
   };
 
+  const handleImageChange = (e) => {
+    setEditedImage(e.target.files[0]);
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
+  
+    const formData = new FormData();
+    formData.append('title', editedTitle);
+    formData.append('body', editedBody);
+    if (editedImage) {
+      formData.append('image', editedImage);
+    }
+  
     try {
-      await axios.put(`http://localhost:8080/api/posts/${id}`, {
-        title: editedTitle,
-        body: editedBody
-      }, { withCredentials: true });
+      await axios.put(`http://localhost:8080/api/posts/${id}`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       
-      setPost({ ...post, title: editedTitle, body: editedBody });
+      //const newImageUrl = editedImage ? `${URL.createObjectURL(editedImage)}?${new Date().getTime()}` : post.image;
+  
+      //TODO: Reemplazar URL cuando deployemos el sitio
+      const response = await axios.get(`http://localhost:8080/api/posts/${id}`, { withCredentials: true });
+      setPost(response.data);
       setIsEditing(false);
     } catch (err) {
       setError('Error al actualizar la publicación');
@@ -149,6 +174,11 @@ function SinglePost() {
               value={editedBody}
               onChange={(e) => setEditedBody(e.target.value)}
             />
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+            />
             <div>
               <Button type="submit" className="edit">Guardar</Button>
               <Button type="button" onClick={() => setIsEditing(false)}>Cancelar</Button>
@@ -160,6 +190,7 @@ function SinglePost() {
             <PostMeta>
               Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
             </PostMeta>
+            {post.image && <PostImage src={`http://localhost:8080${post.image}`} alt="Imagen de la publicación" />}
             <PostBody>{post.body}</PostBody>
             <div style={{ marginTop: '20px' }}>
               <Button className="edit" onClick={handleEdit}>Editar</Button>
