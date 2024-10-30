@@ -2,19 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
+import backgroundImage from './background.png';
+
+const RootContainer = styled.div`
+  background-image: url(${backgroundImage});
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+`;
 
 const PostContainer = styled.div`
   padding: 80px 20px 20px 20px;
   max-width: 800px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 `;
 
 const PostCard = styled.div`
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
   transition: transform 0.2s;
 
   &:hover {
@@ -40,9 +57,10 @@ const PostLink = styled(Link)`
 `;
 
 const ValidationMessage = styled.div`
-  color: red;
+  color: #ff3333;
   font-weight: bold;
   margin-top: 10px;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 `;
 
 function MyPosts() {
@@ -67,26 +85,28 @@ function MyPosts() {
     fetchPosts();
   }, []);
 
-  if (loading) return <div>Cargando...</div>;
-  if (error) return <div>{error}</div>;
-
   return (
-    <PostContainer>
-      {posts.map(post => (
-        <PostLink to={`/post/${post.id}`} key={post.id}>
-          <PostCard>
-            <PostTitle>{post.title}</PostTitle>
-            <PostMeta>
-              Creado el {new Date(post.created_at).toLocaleDateString()}
-            </PostMeta>
-            <p>{post.body.substring(0, 150)}...</p>
-            {post.validated === 0 && (
-              <ValidationMessage>Pendiente de validación</ValidationMessage>
-            )}
-          </PostCard>
-        </PostLink>
-      ))}
-    </PostContainer>
+    <>
+      <RootContainer />
+      <PostContainer>
+        {loading && <div>Cargando...</div>}
+        {error && <div>{error}</div>}
+        {!loading && !error && posts.map(post => (
+          <PostLink to={`/post/${post.id}`} key={post.id}>
+            <PostCard>
+              <PostTitle>{post.title}</PostTitle>
+              <PostMeta>
+                Creado el {new Date(post.created_at).toLocaleDateString()}
+              </PostMeta>
+              <p>{post.body.substring(0, 150)}...</p>
+              {post.validated === 0 && (
+                <ValidationMessage>Pendiente de validación</ValidationMessage>
+              )}
+            </PostCard>
+          </PostLink>
+        ))}
+      </PostContainer>
+    </>
   );
 }
 

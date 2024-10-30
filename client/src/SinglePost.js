@@ -2,18 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
+import backgroundImage from './background.png';
+
+const RootContainer = styled.div`
+  background-image: url(${backgroundImage});
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+`;
 
 const PostContainer = styled.div`
   padding: 80px 20px 20px 20px;
   max-width: 800px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 `;
 
 const PostContent = styled.div`
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
   padding: 30px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
 `;
 
 const PostTitle = styled.h1`
@@ -90,7 +107,7 @@ function SinglePost() {
   const [editedBody, setEditedBody] = useState('');
   const [editedImage, setEditedImage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [errorDetails, setErrorDetails] = useState(null); // Added for error details
+  const [errorDetails, setErrorDetails] = useState(null);
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -158,11 +175,11 @@ function SinglePost() {
           withCredentials: true,
           data: { isAdmin: currentUser.isAdmin }
         });
-        navigate('/home');
+        navigate(-1);
       } catch (err) {
         console.error('Error details:', err.response ? err.response.data : err.message);
         setError('Error al eliminar la publicación');
-        setErrorDetails(err.response ? err.response.data : err.message); //Added to store error details
+        setErrorDetails(err.response ? err.response.data : err.message);
       }
     }
   };
@@ -173,19 +190,47 @@ function SinglePost() {
         withCredentials: true
       });
       setPost({ ...post, validated: 1 });
+      navigate(-1);
     } catch (err) {
       setError('Error al validar la publicación');
     }
   };
 
-  if (loading) return <div>Cargando...</div>;
-  if (error) return (
-    <div>
-      <p>{error}</p>
-      {errorDetails && <p>Details: {errorDetails}</p>} {/* Updated error display */}
-    </div>
+  if (loading) return (
+    <>
+      <RootContainer />
+      <PostContainer>
+        <PostContent>
+          <p>Cargando...</p>
+        </PostContent>
+      </PostContainer>
+    </>
   );
-  if (!post) return <div>Publicación no encontrada</div>;
+
+  if (error) return (
+    <>
+      <RootContainer />
+      <PostContainer>
+        <PostContent>
+          <p>{error}</p>
+          {errorDetails && <p>Details: {errorDetails}</p>}
+        </PostContent>
+      </PostContainer>
+    </>
+  );
+
+  if (!post) return (
+    <>
+      <RootContainer />
+      <PostContainer>
+        <PostContent>
+          <PostTitle>Publicación no encontrada</PostTitle>
+          <p>La publicación que buscas no existe o ha sido eliminada.</p>
+          <Button onClick={() => navigate('/posts')}>Volver a la lista de publicaciones</Button>
+        </PostContent>
+      </PostContainer>
+    </>
+  );
 
   const isAdmin = currentUser && currentUser.isAdmin === 1;
   const isPostOwner = currentUser && currentUser.id === post.user_id;
@@ -194,47 +239,49 @@ function SinglePost() {
   const canValidate = isAdmin && post.validated === 0;
 
   return (
-    <PostContainer>
-      <PostContent>
-        {isEditing ? (
-          <EditForm onSubmit={handleSave}>
-            <Input
-              type="text"
-              value={editedTitle}
-              onChange={(e) => setEditedTitle(e.target.value)}
-            />
-            <Textarea
-              value={editedBody}
-              onChange={(e) => setEditedBody(e.target.value)}
-            />
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
-            <div>
-              <Button type="submit" className="edit">Guardar</Button>
-              <Button type="button" onClick={() => setIsEditing(false)}>Cancelar</Button>
-            </div>
-          </EditForm>
-        ) : (
-          <>
-            <PostTitle>{post.title}</PostTitle>
-            <PostMeta>
-              Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
-            </PostMeta>
-            {post.image && <PostImage src={`http://localhost:8080${post.image}`} alt="Imagen de la publicación" />}
-            <PostBody>{post.body}</PostBody>
-            <div style={{ marginTop: '20px' }}>
-              {canEdit && <Button className="edit" onClick={handleEdit}>Editar</Button>}
-              {canValidate && <Button className="validate" onClick={handleValidate}>Validar</Button>}
-              {canDelete && <Button className="delete" onClick={handleDelete}>Eliminar</Button>}
-              
-            </div>
-          </>
-        )}
-      </PostContent>
-    </PostContainer>
+    <>
+      <RootContainer />
+      <PostContainer>
+        <PostContent>
+          {isEditing ? (
+            <EditForm onSubmit={handleSave}>
+              <Input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+              />
+              <Textarea
+                value={editedBody}
+                onChange={(e) => setEditedBody(e.target.value)}
+              />
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+              <div>
+                <Button type="submit" className="edit">Guardar</Button>
+                <Button type="button" onClick={() => setIsEditing(false)}>Cancelar</Button>
+              </div>
+            </EditForm>
+          ) : (
+            <>
+              <PostTitle>{post.title}</PostTitle>
+              <PostMeta>
+                Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
+              </PostMeta>
+              {post.image && <PostImage src={`http://localhost:8080${post.image}`} alt="Imagen de la publicación" />}
+              <PostBody>{post.body}</PostBody>
+              <div style={{ marginTop: '20px' }}>
+                {canEdit && <Button className="edit" onClick={handleEdit}>Editar</Button>}
+                {canValidate && <Button className="validate" onClick={handleValidate}>Validar</Button>}
+                {canDelete && <Button className="delete" onClick={handleDelete}>Eliminar</Button>}
+              </div>
+            </>
+          )}
+        </PostContent>
+      </PostContainer>
+    </>
   );
 }
 
