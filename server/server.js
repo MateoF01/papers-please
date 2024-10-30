@@ -123,6 +123,15 @@ app.post('/api/login', (req, res) => {
 });
 
   
+app.get('/api/users', (req, res) => {
+    const sql = `SELECT * FROM users`;
+    db.all(sql, (err, rows) => {  // Cambia db.get por db.all
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);  // Envía todas las filas obtenidas
+    });
+});
 
 
 app.get('/api/user', verificarAutenticacion, (req, res) => {
