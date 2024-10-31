@@ -67,10 +67,16 @@ const PostCard = styled.div`
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(5px);
   transition: transform 0.2s;
+  display: flex;
+  gap: 20px;
 
   &:hover {
     transform: translateY(-2px);
   }
+`;
+
+const PostContent = styled.div`
+  flex: 1;
 `;
 
 const PostTitle = styled.h2`
@@ -90,6 +96,21 @@ const PostLink = styled(Link)`
   display: block;
 `;
 
+const PostImage = styled.img`
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+`;
+
+const PostImagePlaceholder = styled.div`
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  background-color: #f0f0f0;
+  flex-shrink: 0;
+`;
 
 function PostList() {
   const [posts, setPosts] = useState([]);
@@ -141,14 +162,29 @@ function PostList() {
         {!loading && !error && sortedPosts.map(post => (
           <PostLink to={`/post/${post.id}`} key={post.id}>
             <PostCard>
-              <PostTitle>{post.title}</PostTitle>
-              <PostMeta>
-                Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
-              </PostMeta>
-              <p>{post.body.substring(0, 150)}...</p>
+              <PostContent>
+                <PostTitle>{post.title}</PostTitle>
+                <PostMeta>
+                  Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
+                </PostMeta>
+                <p>{post.body.substring(0, 150)}...</p>
+              </PostContent>
+              {post.image ? (
+                <PostImage 
+                  src={`http://localhost:8080${post.image}`} 
+                  alt={`Imagen de ${post.title}`}
+                />
+              ) : (
+                <PostImagePlaceholder />
+              )}
             </PostCard>
           </PostLink>
         ))}
+        {!loading && !error && sortedPosts.length === 0 && (
+          <PostCard>
+            <p>No hay publicaciones disponibles en este momento.</p>
+          </PostCard>
+        )}
       </PostContainer>
     </>
   );
