@@ -33,6 +33,39 @@ const Container = styled.div`
   padding: 20px;
 `;
 
+const Header = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+`;
+
+const SortButton = styled.button`
+  background: white;
+  border: none;
+  color: #666;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.3s ease;
+  font-weight: 600;
+  line-height: 26px;
+  padding-left: 20px;
+  padding-right: 20px;
+  min-width: 124px;
+  height: 55px;
+  border-radius: 10px;
+
+  &:hover {
+    color: #333;
+  }
+
+  &:focus {
+    outline: none;
+  }
+`;
+
 const Card = styled.div`
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
@@ -115,6 +148,7 @@ export default function PostListToValidate() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortOrder, setSortOrder] = useState('desc');
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
@@ -135,6 +169,10 @@ export default function PostListToValidate() {
 
     fetchPostsAndUser();
   }, []);
+
+  const handleSortChange = () => {
+    setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
+  };
 
   const handleValidatePost = async (postId) => {
     try {
@@ -166,17 +204,29 @@ export default function PostListToValidate() {
     }
   };
 
+  const sortedPosts = [...posts].sort((a, b) => {
+    const dateA = new Date(a.created_at);
+    const dateB = new Date(b.created_at);
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+  });
+
   return (
     <>
       <RootContainer />
       <PageContainer>
         <Container>
+          <Header>
+            <SortButton onClick={handleSortChange}>
+              Ordenar por fecha {sortOrder === 'desc' ? '▼' : '▲'}
+            </SortButton>
+          </Header>
+
           {loading && <Card>Loading...</Card>}
           {error && <Error>{error}</Error>}
-          {!loading && !error && posts.length === 0 && (
+          {!loading && !error && sortedPosts.length === 0 && (
             <Card>No hay publicaciones para validar.</Card>
           )}
-          {!loading && !error && posts.map(post => (
+          {!loading && !error && sortedPosts.map(post => (
             <Card key={post.id}>
               <Title>
                 <StyledLink to={`/post/${post.id}`}>
