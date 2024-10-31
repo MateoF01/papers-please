@@ -98,6 +98,11 @@ const Textarea = styled.textarea`
   min-height: 150px;
 `;
 
+const AdminName = styled.span`
+  color: #28a745;
+  font-weight: bold;
+`;
+
 function SinglePost() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -238,6 +243,14 @@ function SinglePost() {
   const canDelete = isAdmin || isPostOwner;
   const canValidate = isAdmin && post.validated === 0;
 
+  const renderAuthorName = () => {
+    if (post.user_isAdmin === 1) {
+      //tag de admin
+      return <AdminName>{post.user_name} (admin)</AdminName>;
+    }
+    return post.user_name;
+  };
+
   return (
     <>
       <RootContainer />
@@ -268,7 +281,7 @@ function SinglePost() {
             <>
               <PostTitle>{post.title}</PostTitle>
               <PostMeta>
-                Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
+                Por {renderAuthorName()} • {new Date(post.created_at).toLocaleDateString()}
               </PostMeta>
               {post.image && <PostImage src={`http://localhost:8080${post.image}`} alt="Imagen de la publicación" />}
               <PostBody>{post.body}</PostBody>

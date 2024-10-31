@@ -112,6 +112,11 @@ const PostImagePlaceholder = styled.div`
   flex-shrink: 0;
 `;
 
+const AdminName = styled.span`
+  color: #28a745;
+  font-weight: bold;
+`;
+
 function PostList() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -147,6 +152,14 @@ function PostList() {
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     });
 
+  const renderAuthorName = (post) => {
+    if (post.user_isAdmin === 1) {
+      //tag de admin
+      return <AdminName>{post.user_name} (admin)</AdminName>;
+    }
+    return post.user_name;
+  };
+
   return (
     <>
       <RootContainer />
@@ -165,7 +178,7 @@ function PostList() {
               <PostContent>
                 <PostTitle>{post.title}</PostTitle>
                 <PostMeta>
-                  Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
+                  Por {renderAuthorName(post)} • {new Date(post.created_at).toLocaleDateString()}
                 </PostMeta>
                 <p>{post.body.substring(0, 150)}...</p>
               </PostContent>

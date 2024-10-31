@@ -203,7 +203,7 @@ app.post('/api/posts', verificarAutenticacion, upload.single('image'), (req, res
 // Me traigo todos los posteo
 app.get('/api/posts', (req, res) => {
     const sql = `
-        SELECT posts.*, users.user_name 
+        SELECT posts.*, users.user_name, users.isAdmin as user_isAdmin
         FROM posts 
         JOIN users ON posts.user_id = users.id 
         ORDER BY posts.created_at DESC
@@ -214,11 +214,10 @@ app.get('/api/posts', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
 
-        console.log(rows)
+        console.log(rows);
         res.json(rows);
     });
 });
-
 
 // Obtener publicaciones pendientes de validación
 app.get('/api/posts/to-validate', (req, res) => {
@@ -264,7 +263,7 @@ app.put('/api/posts/:postId/validate', (req, res) => {
 // Traigo un posteo individual
 app.get('/api/posts/:id', (req, res) => {
     const sql = `
-        SELECT posts.*, users.user_name 
+        SELECT posts.*, users.user_name, users.isAdmin as user_isAdmin
         FROM posts 
         JOIN users ON posts.user_id = users.id 
         WHERE posts.id = ?
