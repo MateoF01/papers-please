@@ -25,6 +25,40 @@ const PostContainer = styled.div`
   z-index: 1;
 `;
 
+const Header = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+`;
+
+const SortButton = styled.button`
+  background: white;
+  border: none;
+  color: #666;
+  font-size: 1.25rem;
+  cursor: pointer;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.3s ease;
+  font-weight: 600;
+  line-height: 26px;
+  padding-left: 20px;
+  padding-right: 20px;
+  min-width: 124px;
+  height: 55px;
+  border-radius: 10px;  
+  
+  &:hover {
+    color: #333;
+  }
+
+  &:focus {
+    outline: none;
+  }
+`;
+
 const PostCard = styled.div`
   background-color: rgba(255, 255, 255, 0.9);
   border-radius: 8px;
@@ -56,16 +90,12 @@ const PostLink = styled(Link)`
   display: block;
 `;
 
-const ValidationMessage = styled.div`
-  color: red;
-  font-weight: bold;
-  margin-top: 10px;
-`;
 
 function PostList() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortOrder, setSortOrder] = useState('desc');
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -84,13 +114,31 @@ function PostList() {
     fetchPosts();
   }, []);
 
+  const handleSortChange = () => {
+    setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
+  };
+
+  const sortedPosts = [...posts]
+    .filter(post => post.validated === 1)
+    .sort((a, b) => {
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
   return (
     <>
       <RootContainer />
       <PostContainer>
+        <Header>
+          <SortButton onClick={handleSortChange}>
+            Ordenar por fecha {sortOrder === 'desc' ? '▼' : '▲'}
+          </SortButton>
+        </Header>
+        
         {loading && <div>Cargando...</div>}
         {error && <div>{error}</div>}
-        {!loading && !error && posts.filter(post => post.validated === 1).map(post => (
+        {!loading && !error && sortedPosts.map(post => (
           <PostLink to={`/post/${post.id}`} key={post.id}>
             <PostCard>
               <PostTitle>{post.title}</PostTitle>
