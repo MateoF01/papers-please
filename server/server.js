@@ -200,15 +200,26 @@ app.post('/api/posts', verificarAutenticacion, upload.single('image'), (req, res
 });
 
 
-// Me traigo todos los posteo
+// Me traigo todos los posteo con orden
 app.get('/api/posts', (req, res) => {
+
+    const { orderBy = 'created_at', order = 'DESC' } = req.query;
+
+    const validOrderTypes = ['created_at', 'title', 'user_name'];
+    const validOrderDirections = ['ASC', 'DESC'];
+
+    if (!validOrderTypes.includes(orderBy) || !validOrderDirections.includes(order.toUpperCase())) {
+        return res.status(400).json({ error: 'Invalid order parameters' });
+    }
+    
     const sql = `
         SELECT posts.*, users.user_name, users.isAdmin as user_isAdmin
         FROM posts 
         JOIN users ON posts.user_id = users.id 
-        ORDER BY posts.created_at DESC
+        ORDER BY ${orderBy} ${order.toUpperCase()}
     `;
     
+
     db.all(sql, [], (err, rows) => {
         if (err) {
             return res.status(500).json({ error: err.message });
