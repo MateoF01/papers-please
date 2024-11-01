@@ -53,7 +53,7 @@ const SortButton = styled.button`
   line-height: 26px;
   padding-left: 20px;
   padding-right: 20px;
-  min-width: 124px;
+  // min-width: 124px;
   height: 55px;
   border-radius: 10px;
 
@@ -150,12 +150,13 @@ export default function PostListToValidate() {
   const [error, setError] = useState(null);
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentUser, setCurrentUser] = useState(null);
+  const [orderBy, setOrderBy] = useState('created_at');
 
   useEffect(() => {
     const fetchPostsAndUser = async () => {
       try {
         const [postsResponse, userResponse] = await Promise.all([
-          axios.get('http://localhost:8080/api/posts/to-validate', { withCredentials: true }),
+          axios.get('http://localhost:8080/api/posts/to-validate', {params: {orderBy, order: sortOrder}, withCredentials: true }),
           axios.get('http://localhost:8080/api/user', { withCredentials: true })
         ]);
         setPosts(postsResponse.data);
@@ -168,11 +169,7 @@ export default function PostListToValidate() {
     };
 
     fetchPostsAndUser();
-  }, []);
-
-  const handleSortChange = () => {
-    setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
-  };
+  }, [orderBy, sortOrder]);
 
   const handleValidatePost = async (postId) => {
     try {
@@ -204,11 +201,22 @@ export default function PostListToValidate() {
     }
   };
 
-  const sortedPosts = [...posts].sort((a, b) => {
-    const dateA = new Date(a.created_at);
-    const dateB = new Date(b.created_at);
-    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-  });
+  const handleSortChange = () => {
+    setSortOrder(prevOrder => (prevOrder === 'ASC' ? 'DESC' : 'ASC'));
+  };
+
+  const handleOrderByChange2 = () => {
+    setOrderBy(prevOrder => {
+      if (prevOrder === 'created_at'){
+        return 'title'
+      } else if (prevOrder === "title"){
+        return 'user_name'
+      } else{
+        return 'created_at'
+      }})
+  }
+
+  const sortedPosts = [...posts];
 
   return (
     <>
@@ -216,9 +224,12 @@ export default function PostListToValidate() {
       <PageContainer>
         <Container>
           <Header>
-            <SortButton onClick={handleSortChange}>
-              Ordenar por fecha {sortOrder === 'desc' ? '▼' : '▲'}
-            </SortButton>
+          <SortButton onClick={() => handleOrderByChange2()}>
+            {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Nombre'}
+          </SortButton>
+          <SortButton onClick={handleSortChange}>
+            {sortOrder === 'DESC' ? '▼' : '▲'}
+          </SortButton>
           </Header>
 
           {loading && <Card>Loading...</Card>}

@@ -232,12 +232,22 @@ app.get('/api/posts', (req, res) => {
 
 // Obtener publicaciones pendientes de validación
 app.get('/api/posts/to-validate', (req, res) => {
+
+    const { orderBy = 'created_at', order = 'DESC' } = req.query;
+
+    const validOrderTypes = ['created_at', 'title', 'user_name'];
+    const validOrderDirections = ['ASC', 'DESC'];
+
+    if (!validOrderTypes.includes(orderBy) || !validOrderDirections.includes(order.toUpperCase())) {
+        return res.status(400).json({ error: 'Invalid order parameters' });
+    }
+    
     const sql = `
         SELECT posts.*, users.user_name 
         FROM posts 
         JOIN users ON posts.user_id = users.id 
         WHERE posts.validated = 0 
-        ORDER BY posts.created_at DESC
+        ORDER BY ${orderBy} ${order.toUpperCase()}
     `;
     
     db.all(sql, [], (err, rows) => {
@@ -293,12 +303,22 @@ app.get('/api/posts/:id', (req, res) => {
 
 // Traigo posteos del usuario loggeado
 app.get('/api/posts/user/me', verificarAutenticacion, (req, res) => {
+
+    const { orderBy = 'created_at', order = 'DESC' } = req.query;
+
+    const validOrderTypes = ['created_at', 'title', 'user_name'];
+    const validOrderDirections = ['ASC', 'DESC'];
+
+    if (!validOrderTypes.includes(orderBy) || !validOrderDirections.includes(order.toUpperCase())) {
+        return res.status(400).json({ error: 'Invalid order parameters' });
+    }
+
     const sql = `
         SELECT posts.*, users.user_name 
         FROM posts 
         JOIN users ON posts.user_id = users.id 
         WHERE posts.user_id = ? 
-        ORDER BY posts.created_at DESC
+        ORDER BY ${orderBy} ${order.toUpperCase()}
     `;
     
     db.all(sql, [req.session.usuarioId], (err, rows) => {
