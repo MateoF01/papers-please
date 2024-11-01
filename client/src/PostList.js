@@ -46,7 +46,7 @@ const SortButton = styled.button`
   line-height: 26px;
   padding-left: 20px;
   padding-right: 20px;
-  min-width: 124px;
+  // min-width: 124px;
   height: 55px;
   border-radius: 10px;  
   
@@ -121,12 +121,14 @@ function PostList() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortOrder, setSortOrder] = useState('DESC');
+  const [orderBy, setOrderBy] = useState('created_at');
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/posts', { 
+        const response = await axios.get('http://localhost:8080/api/posts', {
+          params: {orderBy, order: sortOrder},
           withCredentials: true 
         });
         setPosts(response.data);
@@ -138,19 +140,31 @@ function PostList() {
     };
 
     fetchPosts();
-  }, []);
+  }, [orderBy, sortOrder]);
 
   const handleSortChange = () => {
-    setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
+    setSortOrder(prevOrder => (prevOrder === 'ASC' ? 'DESC' : 'ASC'));
   };
+
+  const handleOrderByChange2 = () => {
+    setOrderBy(prevOrder => {
+      if (prevOrder === 'created_at'){
+        return 'title'
+      } else if (prevOrder === "title"){
+        return 'user_name'
+      } else{
+        return 'created_at'
+      }})
+  }
 
   const sortedPosts = [...posts]
     .filter(post => post.validated === 1)
-    .sort((a, b) => {
-      const dateA = new Date(a.created_at);
-      const dateB = new Date(b.created_at);
-      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-    });
+    // .sort((a, b) => {
+    //   const dateA = new Date(a.created_at);
+    //   const dateB = new Date(b.created_at);
+    //   return sortOrder === 'DESC' ? dateB - dateA : dateA - dateB;
+    // })
+    ;
 
   const renderAuthorName = (post) => {
     if (post.user_isAdmin === 1) {
@@ -165,8 +179,11 @@ function PostList() {
       <RootContainer />
       <PostContainer>
         <Header>
+          <SortButton onClick={() => handleOrderByChange2()}>
+            {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Nombre'}
+          </SortButton>
           <SortButton onClick={handleSortChange}>
-            Ordenar por fecha {sortOrder === 'desc' ? '▼' : '▲'}
+            {sortOrder === 'DESC' ? '▼' : '▲'}
           </SortButton>
         </Header>
         
