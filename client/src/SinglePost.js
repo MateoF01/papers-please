@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
 import backgroundImage from './background.png';
+import { Star } from 'lucide-react';
 
 const RootContainer = styled.div`
   background-image: url(${backgroundImage});
@@ -103,7 +104,35 @@ const AdminName = styled.span`
   font-weight: bold;
 `;
 
-function SinglePost() {
+const ReviewSection = styled.div`
+  margin-top: 30px;
+`;
+
+const ReviewForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+`;
+
+const StarRating = styled.div`
+  display: flex;
+  gap: 5px;
+`;
+
+const ReviewList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+`;
+
+const ReviewItem = styled.div`
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 15px;
+  border-radius: 8px;
+`;
+
+export default function SinglePost() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -113,30 +142,41 @@ function SinglePost() {
   const [editedImage, setEditedImage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [errorDetails, setErrorDetails] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [userRating, setUserRating] = useState(0);
+  const [userComment, setUserComment] = useState('');
+  const [hasUserReviewed, setHasUserReviewed] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchPost = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get(`http://localhost:8080/api/posts/${id}`, {
-          withCredentials: true
-        });
-        setPost(response.data);
+        setLoading(true);
         
-        const userResponse = await axios.get(`http://localhost:8080/api/user`, { withCredentials: true });
+        const [postResponse, userResponse, reviewsResponse] = await Promise.all([
+          axios.get(`http://localhost:8080/api/posts/${id}`, { withCredentials: true }),
+          axios.get(`http://localhost:8080/api/user`, { withCredentials: true }),
+          axios.get(`http://localhost:8080/api/posts/${id}/reviews`, { withCredentials: true })
+        ]);
+
+        setPost(postResponse.data);
+        setEditedTitle(postResponse.data.title);
+        setEditedBody(postResponse.data.body);
         setCurrentUser(userResponse.data);
-        
-        setEditedTitle(response.data.title);
-        setEditedBody(response.data.body);
+        setReviews(reviewsResponse.data);
+
+        setHasUserReviewed(reviewsResponse.data.some(review => review.user_id === userResponse.data.id));
+
         setLoading(false);
       } catch (err) {
-        setError('Error al cargar la publicación');
+        console.error('Error fetching data:', err);
+        setError('Error al cargar la publicación y las reseñas');
         setLoading(false);
       }
     };
 
-    fetchPost();
+    fetchData();
   }, [id]);
 
   const handleEdit = () => {
@@ -201,6 +241,32 @@ function SinglePost() {
     }
   };
 
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (hasUserReviewed) {
+      alert('You have already submitted a review for this post.');
+      return;
+    }
+    try {
+      const response = await axios.post(`http://localhost:8080/api/posts/${id}/reviews`, {
+        rating: userRating,
+        comment: userComment
+      }, {
+        withCredentials: true
+      });
+      const newReview = {
+        ...response.data,
+        user_name: currentUser.user_name
+      };
+      setReviews([newReview, ...reviews]);
+      setUserRating(0);
+      setUserComment('');
+      setHasUserReviewed(true);
+    } catch (err) {
+      console.error('Error submitting review:', err);
+    }
+  };
+
   if (loading) return (
     <>
       <RootContainer />
@@ -242,10 +308,10 @@ function SinglePost() {
   const canEdit = isPostOwner;
   const canDelete = isAdmin || isPostOwner;
   const canValidate = isAdmin && post.validated === 0;
+  const canReview = !isPostOwner && !hasUserReviewed;
 
   const renderAuthorName = () => {
     if (post.user_isAdmin === 1) {
-      //tag de admin
       return <AdminName>{post.user_name} (admin)</AdminName>;
     }
     return post.user_name;
@@ -290,6 +356,52 @@ function SinglePost() {
                 {canValidate && <Button className="validate" onClick={handleValidate}>Validar</Button>}
                 {canDelete && <Button className="delete" onClick={handleDelete}>Eliminar</Button>}
               </div>
+
+              <ReviewSection>
+                <h2>Reseñas</h2>
+                {canReview ? (
+                  <ReviewForm onSubmit={handleSubmitReview}>
+                    <StarRating>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          onClick={() => setUserRating(star)}
+                          fill={star <= userRating ? '#FFD700' : 'none'}
+                          stroke={star <= userRating ? '#FFD700' : '#000'}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      ))}
+                    </StarRating>
+                    <Textarea
+                      value={userComment}
+                      onChange={(e) => setUserComment(e.target.value)}
+                      placeholder="Escribir reseña..."
+                    />
+                    <Button type="submit" className="edit">Publicar reseña</Button>
+                  </ReviewForm>
+                ) : (
+                  <p>{isPostOwner ? "No puedes hacer una reseña en una publicación propia." : "Ya realizaste una reseña."}</p>
+                )}
+                <ReviewList>
+                  {reviews.map((review) => (
+                    <ReviewItem key={review.id}>
+                      <p>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            fill={star <= review.rating ? '#FFD700' : 'none'}
+                            stroke={star <= review.rating ? '#FFD700' : '#000'}
+                          />
+                        ))}
+                      </p>
+                      <p>{review.comment}</p>
+                      <PostMeta>
+                        Por {review.user_name} • {new Date(review.created_at).toLocaleDateString()}
+                      </PostMeta>
+                    </ReviewItem>
+                  ))}
+                </ReviewList>
+              </ReviewSection>
             </>
           )}
         </PostContent>
@@ -297,5 +409,3 @@ function SinglePost() {
     </>
   );
 }
-
-export default SinglePost;

@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const cors = require('cors');
+const { check, validationResult } = require('express-validator');
 
 const app = express();
 const db = new sqlite3.Database('./database.db');
@@ -393,7 +394,58 @@ app.delete('/api/posts/:id', verificarAutenticacion, (req, res) => {
     });
 });
 
-
+// cargar reseña
+app.post('/api/posts/:postId/reviews', 
+    verificarAutenticacion,
+    [
+      check('rating').isInt({ min: 1, max: 5 }),
+      check('comment').optional().isString()
+    ],
+    (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+  
+      const { postId } = req.params;
+      const { rating, comment } = req.body;
+      const userId = req.session.usuarioId;
+  
+      const sql = `INSERT INTO reviews (user_id, post_id, rating, comment) VALUES (?, ?, ?, ?)`;
+      db.run(sql, [userId, postId, rating, comment], function(err) {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json({
+          id: this.lastID,
+          user_id: userId,
+          post_id: postId,
+          rating,
+          comment,
+          created_at: new Date().toISOString()
+        });
+      });
+    }
+  );
+  
+  // obtener reseña
+  app.get('/api/posts/:postId/reviews', (req, res) => {
+    const { postId } = req.params;
+    const sql = `
+      SELECT reviews.*, users.user_name
+      FROM reviews 
+      JOIN users ON reviews.user_id = users.id 
+      WHERE reviews.post_id = ?
+      ORDER BY reviews.created_at DESC
+    `;
+    
+    db.all(sql, [postId], (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(rows);
+    });
+  });
 
 // Cierra la conexión a la base de datos al finalizar el servidor
 app.on('exit', () => {
@@ -405,3 +457,4 @@ const PORT = 8080;
 app.listen(PORT, () => {
     console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });
+
