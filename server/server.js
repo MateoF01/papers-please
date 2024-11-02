@@ -156,6 +156,66 @@ app.post('/api/user/clear', (req, res) => {
     });
 });
 
+app.put('/api/user/update/me', verificarAutenticacion, (req, res) => {
+    const userId = req.session.usuarioId;
+
+    const nuevaContraseña = req.body.password;
+    const nuevoEmail = req.body.email
+
+    const sql = `
+    UPDATE users
+    SET email = ?, password = ?
+    WHERE id = ?;
+    `;
+
+    db.run(sql, [nuevoEmail, nuevaContraseña, userId], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        res.json({ message: 'Información actualizada con éxito' });
+    });
+});
+
+
+app.get('/api/user/me', verificarAutenticacion, (req, res) => {
+    const userId = req.session.usuarioId;
+
+    const sql = `
+    SELECT 
+        u.user_name, 
+        u.email, 
+        u.password, 
+        u.isAdmin,
+        COUNT(CASE WHEN p.validated = 1 THEN 1 END) AS validated_posts,
+        COUNT(CASE WHEN p.validated = 0 THEN 1 END) AS unvalidated_posts,
+        COUNT(r.id) AS total_reviews
+    FROM 
+        users u
+    LEFT JOIN 
+        posts p ON u.id = p.user_id
+    LEFT JOIN 
+        reviews r ON u.id = r.user_id
+    WHERE 
+        u.id = ?
+    GROUP BY 
+        u.id, u.user_name, u.email, u.password, u.isAdmin;
+    `;
+
+    db.get(sql, [userId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+        res.json(row);
+    });
+});
+
+
 // Endpoint para cerrar la sesión
 app.post('/api/logout', (req, res) => {
     // Destruye la sesión del usuario

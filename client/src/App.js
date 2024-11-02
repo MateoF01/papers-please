@@ -13,6 +13,7 @@ import MyPosts from './MyPosts';
 import PostListToValidate from './PostListToValidate';
 import AdminRoute from './components/routes/AdminRoute';
 import AuthenticatedRoute from './components/routes/AuthenticatedRoute';
+import Profile from './Profile';
 import { AuthContext, AuthProvider } from './assets/AuthContext';
 
 const Navbar = styled.nav`
@@ -150,6 +151,7 @@ function NavbarContent() {
       <NavbarRight>
         {isAuthenticated ? (
           <>
+            <NavbarButton onClick={() => navigate('/profile')}>Mi Perfil</NavbarButton>
             <NavbarButton onClick={handleNavigateToPublication}>Crear Publicación</NavbarButton>
             <NavbarButton onClick={() => navigate('/posts')}>Ver Publicaciones</NavbarButton>
             <NavbarButton onClick={() => navigate('/my-posts')}>Ver Mis Publicaciones</NavbarButton>
@@ -190,7 +192,9 @@ function App() {
           <Route path="/posts" element={<AuthenticatedRoute element={PostList} />} />
           <Route path="/my-posts" element={<AuthenticatedRoute element={MyPosts} />} />
           <Route path="/post/:id" element={<AuthenticatedRoute element={SinglePost} />} />
-          
+          <Route path="/profile" element={<AuthenticatedRoute element={Profile} />} />
+
+
           {/* Ruta protegida para admin */}
           <Route path="/posts-to-validate" element={<AdminRoute element={PostListToValidate} />} />
           
