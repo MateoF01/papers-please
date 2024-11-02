@@ -507,6 +507,89 @@ app.post('/api/posts/:postId/reviews',
     });
   });
 
+
+
+// Editar reseña
+app.put('/api/reviews/:reviewId', verificarAutenticacion, [
+    check('rating').isInt({ min: 1, max: 5 }),
+    check('comment').optional().isString()
+  ], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+  
+    const { reviewId } = req.params;
+    const { rating, comment } = req.body;
+    const userId = req.session.usuarioId;
+  
+    // First, check if the review belongs to the user
+    db.get('SELECT * FROM reviews WHERE id = ?', [reviewId], (err, review) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      if (!review) {
+        return res.status(404).json({ error: 'Review not found' });
+      }
+      if (review.user_id !== userId) {
+        return res.status(403).json({ error: 'Not authorized to edit this review' });
+      }
+  
+      // If authorized, update the review
+      const sql = `UPDATE reviews SET rating = ?, comment = ? WHERE id = ?`;
+      db.run(sql, [rating, comment, reviewId], function(err) {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ message: 'Review updated successfully' });
+      });
+    });
+  });
+  
+  // borrar reseña
+  app.delete('/api/reviews/:reviewId', verificarAutenticacion, (req, res) => {
+    const { reviewId } = req.params;
+    const userId = req.session.usuarioId;
+  
+
+    db.get('SELECT isAdmin FROM users WHERE id = ?', [userId], (err, user) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      
+      if (user.isAdmin) {
+
+        deleteReview(reviewId, res);
+      } else {
+
+        db.get('SELECT * FROM reviews WHERE id = ?', [reviewId], (err, review) => {
+          if (err) {
+            return res.status(500).json({ error: err.message });
+          }
+          if (!review) {
+            return res.status(404).json({ error: 'Review not found' });
+          }
+          if (review.user_id !== userId) {
+            return res.status(403).json({ error: 'Not authorized to delete this review' });
+          }
+          
+          deleteReview(reviewId, res);
+        });
+      }
+    });
+  });
+  
+  function deleteReview(reviewId, res) {
+    const sql = `DELETE FROM reviews WHERE id = ?`;
+    db.run(sql, [reviewId], function(err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({ message: 'Review deleted successfully' });
+    });
+  }
+
+
 // Cierra la conexión a la base de datos al finalizar el servidor
 app.on('exit', () => {
     db.close();

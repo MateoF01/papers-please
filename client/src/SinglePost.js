@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
 import backgroundImage from './background.png';
-import { Star } from 'lucide-react';
+import { Star, Edit, Trash } from 'lucide-react';
 
 const RootContainer = styled.div`
   background-image: url(${backgroundImage});
@@ -97,6 +97,7 @@ const Textarea = styled.textarea`
   border: 1px solid #ddd;
   border-radius: 4px;
   min-height: 150px;
+  resize: none;
 `;
 
 const AdminName = styled.span`
@@ -148,6 +149,9 @@ export default function SinglePost() {
   const [hasUserReviewed, setHasUserReviewed] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [editedRating, setEditedRating] = useState(0);
+  const [editedComment, setEditedComment] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -267,6 +271,45 @@ export default function SinglePost() {
     }
   };
 
+  const handleEditReview = (review) => {
+    setEditingReviewId(review.id);
+    setEditedRating(review.rating);
+    setEditedComment(review.comment);
+  };
+
+  const handleSaveReview = async (reviewId) => {
+    try {
+      await axios.put(`http://localhost:8080/api/reviews/${reviewId}`, {
+        rating: editedRating,
+        comment: editedComment
+      }, {
+        withCredentials: true
+      });
+      const updatedReviews = reviews.map(review => 
+        review.id === reviewId ? { ...review, rating: editedRating, comment: editedComment } : review
+      );
+      setReviews(updatedReviews);
+      setEditingReviewId(null);
+    } catch (err) {
+      console.error('Error updating review:', err);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (window.confirm('Are you sure you want to delete this review?')) {
+      try {
+        await axios.delete(`http://localhost:8080/api/reviews/${reviewId}`, {
+          withCredentials: true
+        });
+        window.location.reload()
+        setReviews(reviews.filter(review => review.id !== reviewId));
+      } catch (err) {
+        console.error('Error deleting review:', err);
+      }
+    }
+  };
+
+
   if (loading) return (
     <>
       <RootContainer />
@@ -308,7 +351,7 @@ export default function SinglePost() {
   const canEdit = isPostOwner;
   const canDelete = isAdmin || isPostOwner;
   const canValidate = isAdmin && post.validated === 0;
-  const canReview = !isPostOwner && !hasUserReviewed;
+  const canReview = !isPostOwner && !hasUserReviewed && post.validated === 1;
 
   const renderAuthorName = () => {
     if (post.user_isAdmin === 1) {
@@ -357,51 +400,88 @@ export default function SinglePost() {
                 {canDelete && <Button className="delete" onClick={handleDelete}>Eliminar</Button>}
               </div>
 
-              <ReviewSection>
-                <h2>Reseñas</h2>
-                {canReview ? (
-                  <ReviewForm onSubmit={handleSubmitReview}>
-                    <StarRating>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          onClick={() => setUserRating(star)}
-                          fill={star <= userRating ? '#FFD700' : 'none'}
-                          stroke={star <= userRating ? '#FFD700' : '#000'}
-                          style={{ cursor: 'pointer' }}
-                        />
-                      ))}
-                    </StarRating>
-                    <Textarea
-                      value={userComment}
-                      onChange={(e) => setUserComment(e.target.value)}
-                      placeholder="Escribir reseña..."
-                    />
-                    <Button type="submit" className="edit">Publicar reseña</Button>
-                  </ReviewForm>
-                ) : (
-                  <p>{isPostOwner ? "No puedes hacer una reseña en una publicación propia." : "Ya realizaste una reseña."}</p>
-                )}
-                <ReviewList>
-                  {reviews.map((review) => (
-                    <ReviewItem key={review.id}>
-                      <p>
+              {post.validated === 1 && (
+                <ReviewSection>
+                  <h2>Reseñas</h2>
+                  {canReview ? (
+                    <ReviewForm onSubmit={handleSubmitReview}>
+                      <StarRating>
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            fill={star <= review.rating ? '#FFD700' : 'none'}
-                            stroke={star <= review.rating ? '#FFD700' : '#000'}
+                            onClick={() => setUserRating(star)}
+                            fill={star <= userRating ? '#FFD700' : 'none'}
+                            stroke={star <= userRating ? '#FFD700' : '#000'}
+                            style={{ cursor: 'pointer' }}
                           />
                         ))}
-                      </p>
-                      <p>{review.comment}</p>
-                      <PostMeta>
-                        Por {review.user_name} • {new Date(review.created_at).toLocaleDateString()}
-                      </PostMeta>
-                    </ReviewItem>
-                  ))}
-                </ReviewList>
-              </ReviewSection>
+                      </StarRating>
+                      <Textarea
+                        value={userComment}
+                        onChange={(e) => setUserComment(e.target.value)}
+                        placeholder="Escribir reseña..."
+                      />
+                      <Button type="submit" className="edit">Publicar reseña</Button>
+                    </ReviewForm>
+                  ) : (
+                    <p>{isPostOwner ? "No puedes hacer una reseña en una publicación propia." : "Ya realizaste una reseña."}</p>
+                  )}
+                  <ReviewList>
+                    {reviews.map((review) => (
+                      <ReviewItem key={review.id}>
+                        {editingReviewId === review.id ? (
+                          <form onSubmit={(e) => { e.preventDefault(); handleSaveReview(review.id); }}>
+                            <StarRating>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  onClick={() => setEditedRating(star)}
+                                  fill={star <= editedRating ? '#FFD700' : 'none'}
+                                  stroke={star <= editedRating ? '#FFD700' : '#000'}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                              ))}
+                            </StarRating>
+                            <Textarea
+                              value={editedComment}
+                              onChange={(e) => setEditedComment(e.target.value)}
+                            />
+                            <Button type="submit" className="edit">Save</Button>
+                            <Button type="button" onClick={() => setEditingReviewId(null)}>Cancel</Button>
+                          </form>
+                        ) : (
+                          <>
+                            <p>
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  fill={star <= review.rating ? '#FFD700' : 'none'}
+                                  stroke={star <= review.rating ? '#FFD700' : '#000'}
+                                />
+                              ))}
+                            </p>
+                            <p>{review.comment}</p>
+                            <PostMeta>
+                              Por {review.user_name} • {new Date(review.created_at).toLocaleDateString()}
+                            </PostMeta>
+                            <div>
+                              {currentUser.id === review.user_id && (
+                                <>
+                                  <Button onClick={() => handleEditReview(review)}><Edit size={16} /></Button>
+                                  <Button onClick={() => handleDeleteReview(review.id)}><Trash size={16} /></Button>
+                                </>
+                              )}
+                              {currentUser.isAdmin && currentUser.id !== review.user_id ? (
+                                <Button onClick={() => handleDeleteReview(review.id)}><Trash size={16} /></Button>
+                              ) : null}
+                            </div>
+                          </>
+                        )}
+                      </ReviewItem>
+                    ))}
+                  </ReviewList>
+                </ReviewSection>
+              )}
             </>
           )}
         </PostContent>
