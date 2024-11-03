@@ -88,35 +88,43 @@ function Profile() {
   const [updateError, setUpdateError] = useState(null);
   const [updateSuccess, setUpdateSuccess] = useState(null);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await axios.get('http://localhost:8080/api/user/me', { withCredentials: true });
-        console.log(response.data);
-        setProfileData(response.data);
-      } catch (err) {
-        setError('Error al cargar los datos del usuario');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProfile = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/api/user/me', { withCredentials: true });
+      console.log(response.data);
+      setProfileData(response.data);
+    } catch (err) {
+      setError('Error al cargar los datos del usuario');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchProfile();
+  useEffect(() => {
+    fetchProfile(); // Llamada inicial para obtener el perfil cuando se carga el componente
   }, []);
 
   const handleUpdateEmail = async (e) => {
     e.preventDefault();
     setUpdateError(null);
     setUpdateSuccess(null);
+
+    console.log(profileData.id);
+    console.log(newEmail);
+    console.log(profileData.password);
     
     try {
       await axios.put('http://localhost:8080/api/user/update/me', {
-        email: newEmail,
-        password: profileData.password
+        userId: profileData.id,
+        newEmail: newEmail,
+        newPassword: profileData.password
       }, { withCredentials: true });
 
       setUpdateSuccess('Email actualizado correctamente.');
       setNewEmail('');
+      
+      // Actualizo los datos del perfil
+      fetchProfile();
     } catch (err) {
       setUpdateError('Error al actualizar el email.');
     }
@@ -129,12 +137,15 @@ function Profile() {
     
     try {
       await axios.put('http://localhost:8080/api/user/update/me', {
-        email: profileData.email,  
-        password: newPassword,
+        userId: profileData.id,
+        newEmail: profileData.email,
+        newPassword: newPassword
       }, { withCredentials: true });
 
       setUpdateSuccess('Contraseña actualizada correctamente.');
       setNewPassword('');
+      // Actualizo los datos del perfil
+      fetchProfile();
     } catch (err) {
       setUpdateError('Error al actualizar la contraseña.');
     }

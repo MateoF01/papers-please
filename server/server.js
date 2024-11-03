@@ -157,25 +157,44 @@ app.post('/api/user/clear', (req, res) => {
 });
 
 app.put('/api/user/update/me', verificarAutenticacion, (req, res) => {
-    const userId = req.session.usuarioId;
 
-    const nuevaContraseña = req.body.password;
-    const nuevoEmail = req.body.email
+    const { userId, newEmail, newPassword } = req.body;
 
-    const sql = `
-    UPDATE users
-    SET email = ?, password = ?
-    WHERE id = ?;
-    `;
+    // Validación de la contraseña
+    const passwordRegex = /^(?=.*[a-zA-ZÀ-ÿ])(?=.*[A-ZÀ-ÿ])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{12,}$/;
+    if (!passwordRegex.test(newPassword)) {
+        return res.status(400).json({
+            error: 'La contraseña debe tener al menos 12 caracteres, una mayúscula, una minúscula, un número y un símbolo.'
+        });
+    }
 
-    db.run(sql, [nuevoEmail, nuevaContraseña, userId], function(err) {
+    // Consulta para verificar si el correo electrónico ya esta registrado
+    const checkUserOrEmailSql = `SELECT * FROM users WHERE email = ? AND id <> ?`;
+    db.get(checkUserOrEmailSql, [newEmail, userId], (err, row) => {
         if (err) {
             return res.status(500).json({ error: 'Error interno del servidor', details: err.message });
         }
-        if (this.changes === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado' });
+
+        if (row) {
+            return res.status(400).json({ error: 'El correo electrónico ya esta registrado' });
         }
-        res.json({ message: 'Información actualizada con éxito' });
+
+        // Actualización de datos si las validaciones pasaron
+        const sql = `
+        UPDATE users
+        SET email = ?, password = ?
+        WHERE id = ?;
+        `;
+
+        db.run(sql, [ newEmail, newPassword, userId ], function(err) {
+            if (err) {
+                return res.status(500).json({ error: 'Error interno del servidor', details: err.message });
+            }
+            if (this.changes === 0) {
+                return res.status(404).json({ error: 'Usuario no encontrado' });
+            }
+            res.json({ message: 'Información actualizada con éxito' });
+        });
     });
 });
 
@@ -189,6 +208,7 @@ app.get('/api/user/me', verificarAutenticacion, (req, res) => {
         u.email, 
         u.password, 
         u.isAdmin,
+        u.id,
         COUNT(CASE WHEN p.validated = 1 THEN 1 END) AS validated_posts,
         COUNT(CASE WHEN p.validated = 0 THEN 1 END) AS unvalidated_posts,
         COUNT(r.id) AS total_reviews
