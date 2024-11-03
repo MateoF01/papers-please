@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import styled from 'styled-components';
 import backgroundImage from './background.png';
+import * as Yup from "yup";
 
 const RootContainer = styled.div`
   background-image: url(${backgroundImage});
@@ -104,52 +105,84 @@ function Profile() {
     fetchProfile(); // Llamada inicial para obtener el perfil cuando se carga el componente
   }, []);
 
-  const handleUpdateEmail = async (e) => {
-    e.preventDefault();
-    setUpdateError(null);
-    setUpdateSuccess(null);
 
-    console.log(profileData.id);
-    console.log(newEmail);
-    console.log(profileData.password);
-    
-    try {
-      await axios.put('http://localhost:8080/api/user/update/me', {
-        userId: profileData.id,
-        newEmail: newEmail,
-        newPassword: profileData.password
-      }, { withCredentials: true });
 
-      setUpdateSuccess('Email actualizado correctamente.');
-      setNewEmail('');
-      
-      // Actualizo los datos del perfil
-      fetchProfile();
-    } catch (err) {
-      setUpdateError('Error al actualizar el email.');
-    }
-  };
+// Validación para el email
+const emailValidationSchema = Yup.object({
+  email: Yup.string()
+    .email('Formato de email inválido')
+    .required('El correo electrónico es obligatorio'),
+});
 
-  const handleUpdatePassword = async (e) => {
-    e.preventDefault();
-    setUpdateError(null);
-    setUpdateSuccess(null);
-    
-    try {
-      await axios.put('http://localhost:8080/api/user/update/me', {
-        userId: profileData.id,
-        newEmail: profileData.email,
-        newPassword: newPassword
-      }, { withCredentials: true });
+// Validación para la contraseña
+const passwordValidationSchema = Yup.object({
+  password: Yup.string()
+    .min(12, 'La contraseña debe tener al menos 12 caracteres')
+    .matches(/[A-Z]/, 'Debe contener al menos una letra mayúscula')
+    .matches(/[a-z]/, 'Debe contener al menos una letra minúscula')
+    .matches(/\d/, 'Debe contener al menos un número')
+    .matches(/[^A-Za-z0-9\s]/, 'Debe contener al menos un símbolo especial (e.g. @, $, !, %, *, ?, &)')
+    .required('La contraseña es obligatoria'),
+});
 
-      setUpdateSuccess('Contraseña actualizada correctamente.');
-      setNewPassword('');
-      // Actualizo los datos del perfil
-      fetchProfile();
-    } catch (err) {
-      setUpdateError('Error al actualizar la contraseña.');
-    }
-  };
+const handleUpdateEmail = async (e) => {
+  e.preventDefault();
+  setUpdateError(null);
+  setUpdateSuccess(null);
+
+  // Validación de email
+  try {
+    await emailValidationSchema.validate({ email: newEmail }); // Solo valida el email
+  } catch (validationError) {
+    return setUpdateError(validationError.message); // Muestra el mensaje de error si no cumple
+  }
+
+  try {
+    await axios.put('http://localhost:8080/api/user/update/me', {
+      userId: profileData.id,
+      newEmail: newEmail,
+      newPassword: profileData.password,
+    }, { withCredentials: true });
+
+    setUpdateSuccess('Email actualizado correctamente.');
+    setNewEmail('');
+
+    // Actualizo los datos del perfil
+    fetchProfile();
+  } catch (err) {
+    setUpdateError('Error al actualizar el email.');
+  }
+};
+
+const handleUpdatePassword = async (e) => {
+  e.preventDefault();
+  setUpdateError(null);
+  setUpdateSuccess(null);
+
+  // Validación de contraseña
+  try {
+    await passwordValidationSchema.validate({ password: newPassword }); // Solo valida la contraseña
+  } catch (validationError) {
+    return setUpdateError(validationError.message); // Muestra el mensaje de error si no cumple
+  }
+
+  try {
+    await axios.put('http://localhost:8080/api/user/update/me', {
+      userId: profileData.id,
+      newEmail: profileData.email,
+      newPassword: newPassword,
+    }, { withCredentials: true });
+
+    setUpdateSuccess('Contraseña actualizada correctamente.');
+    setNewPassword('');
+
+    // Actualizo los datos del perfil
+    fetchProfile();
+  } catch (err) {
+    setUpdateError('Error al actualizar la contraseña.');
+  }
+};
+
 
   return (
     <>
