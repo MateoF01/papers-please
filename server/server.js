@@ -17,7 +17,7 @@ app.use(cors({
 
 
 app.use(session({
-    secret: 'mySuperSecretKey123',
+    secret: process.env.SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -26,6 +26,7 @@ app.use(session({
         sameSite: 'lax'
     }
 }));
+
 app.use('/uploads', express.static('uploads'));
 
 const multer = require('multer');
