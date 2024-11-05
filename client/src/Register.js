@@ -13,6 +13,8 @@ import DefaultButton from "./components/button/DefaultButton";
 import TextInput from './components/form/input/text';
 import { AuthContext } from './assets/AuthContext'; // Importo AuthContext
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
 const registerStyle = {
   backgroundImage: `url(${backgroundImage})`,
   backgroundSize: 'cover',
@@ -107,7 +109,7 @@ function Register() {
   });
 
   const handleSubmit = (values, { setSubmitting, setErrors }) => {
-    axios.post('http://localhost:8080/api/register', values, { withCredentials: true })
+    axios.post(`${backendUrl}/api/register`, values, { withCredentials: true })
       .then(() => {
         setSubmitting(false);
         checkAuthentication(); // checkeo auth después de registrarme

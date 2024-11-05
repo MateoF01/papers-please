@@ -4,6 +4,8 @@ import axios from 'axios';
 import styled from 'styled-components';
 import backgroundImage from './background.png';
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
 const RootContainer = styled.div`
   background-image: url(${backgroundImage});
   background-size: cover;
@@ -156,8 +158,8 @@ export default function PostListToValidate() {
     const fetchPostsAndUser = async () => {
       try {
         const [postsResponse, userResponse] = await Promise.all([
-          axios.get('http://localhost:8080/api/posts/to-validate', {params: {orderBy, order: sortOrder}, withCredentials: true }),
-          axios.get('http://localhost:8080/api/user', { withCredentials: true })
+          axios.get(`${backendUrl}/api/posts/to-validate`, {params: {orderBy, order: sortOrder}, withCredentials: true }),
+          axios.get(`${backendUrl}/api/user`, { withCredentials: true })
         ]);
         setPosts(postsResponse.data);
         setCurrentUser(userResponse.data);
@@ -173,7 +175,7 @@ export default function PostListToValidate() {
 
   const handleValidatePost = async (postId) => {
     try {
-      await axios.put(`http://localhost:8080/api/posts/${postId}/validate`, {}, {
+      await axios.put(`${backendUrl}/api/posts/${postId}/validate`, {}, {
         withCredentials: true
       });
       // Remove the validated post from the list
@@ -190,7 +192,7 @@ export default function PostListToValidate() {
       return;
     }
     try {
-      await axios.delete(`http://localhost:8080/api/posts/${postId}`, {
+      await axios.delete(`${backendUrl}/api/posts/${postId}`, {
         withCredentials: true,
         data: { isAdmin: currentUser.isAdmin }
       });

@@ -5,6 +5,8 @@ import styled from 'styled-components';
 import backgroundImage from './background.png';
 import { Star, Edit, Trash } from 'lucide-react';
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
 const RootContainer = styled.div`
   background-image: url(${backgroundImage});
   background-size: cover;
@@ -159,9 +161,9 @@ export default function SinglePost() {
         setLoading(true);
         
         const [postResponse, userResponse, reviewsResponse] = await Promise.all([
-          axios.get(`http://localhost:8080/api/posts/${id}`, { withCredentials: true }),
-          axios.get(`http://localhost:8080/api/user`, { withCredentials: true }),
-          axios.get(`http://localhost:8080/api/posts/${id}/reviews`, { withCredentials: true })
+          axios.get(`${backendUrl}/api/posts/${id}`, { withCredentials: true }),
+          axios.get(`${backendUrl}/api/user`, { withCredentials: true }),
+          axios.get(`${backendUrl}/api/posts/${id}/reviews`, { withCredentials: true })
         ]);
 
         setPost(postResponse.data);
@@ -202,14 +204,14 @@ export default function SinglePost() {
     }
   
     try {
-      await axios.put(`http://localhost:8080/api/posts/${id}`, formData, {
+      await axios.put(`${backendUrl}/api/posts/${id}`, formData, {
         withCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       
-      const response = await axios.get(`http://localhost:8080/api/posts/${id}`, { withCredentials: true });
+      const response = await axios.get(`${backendUrl}/api/posts/${id}`, { withCredentials: true });
       setPost(response.data);
       setIsEditing(false);
     } catch (err) {
@@ -220,7 +222,7 @@ export default function SinglePost() {
   const handleDelete = async () => {
     if (window.confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
       try {
-        await axios.delete(`http://localhost:8080/api/posts/${id}`, {
+        await axios.delete(`${backendUrl}/api/posts/${id}`, {
           withCredentials: true,
           data: { isAdmin: currentUser.isAdmin }
         });
@@ -235,7 +237,7 @@ export default function SinglePost() {
 
   const handleValidate = async () => {
     try {
-      await axios.put(`http://localhost:8080/api/posts/${id}/validate`, {}, {
+      await axios.put(`${backendUrl}/api/posts/${id}/validate`, {}, {
         withCredentials: true
       });
       setPost({ ...post, validated: 1 });
@@ -252,7 +254,7 @@ export default function SinglePost() {
       return;
     }
     try {
-      const response = await axios.post(`http://localhost:8080/api/posts/${id}/reviews`, {
+      const response = await axios.post(`${backendUrl}/api/posts/${id}/reviews`, {
         rating: userRating,
         comment: userComment
       }, {
@@ -279,7 +281,7 @@ export default function SinglePost() {
 
   const handleSaveReview = async (reviewId) => {
     try {
-      await axios.put(`http://localhost:8080/api/reviews/${reviewId}`, {
+      await axios.put(`${backendUrl}/api/reviews/${reviewId}`, {
         rating: editedRating,
         comment: editedComment
       }, {
@@ -298,7 +300,7 @@ export default function SinglePost() {
   const handleDeleteReview = async (reviewId) => {
     if (window.confirm('Are you sure you want to delete this review?')) {
       try {
-        await axios.delete(`http://localhost:8080/api/reviews/${reviewId}`, {
+        await axios.delete(`${backendUrl}/api/reviews/${reviewId}`, {
           withCredentials: true
         });
         window.location.reload()
@@ -392,7 +394,7 @@ export default function SinglePost() {
               <PostMeta>
                 Por {renderAuthorName()} • {new Date(post.created_at).toLocaleDateString()}
               </PostMeta>
-              {post.image && <PostImage src={`http://localhost:8080${post.image}`} alt="Imagen de la publicación" />}
+              {post.image && <PostImage src={`${backendUrl}${post.image}`} alt="Imagen de la publicación" />}
               <PostBody>{post.body}</PostBody>
               <div style={{ marginTop: '20px' }}>
                 {canEdit && <Button className="edit" onClick={handleEdit}>Editar</Button>}

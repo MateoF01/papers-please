@@ -4,6 +4,8 @@ import axios from 'axios';
 import styled from 'styled-components';
 import backgroundImage from './background.png';
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
 const RootContainer = styled.div`
   background-image: url(${backgroundImage});
   background-size: cover;
@@ -127,7 +129,7 @@ function PostList() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/posts', {
+        const response = await axios.get(`${backendUrl}/api/posts`, {
           params: {orderBy, order: sortOrder},
           withCredentials: true 
         });
@@ -201,7 +203,7 @@ function PostList() {
               </PostContent>
               {post.image ? (
                 <PostImage 
-                  src={`http://localhost:8080${post.image}`} 
+                  src={`${backendUrl}${post.image}`} 
                   alt={`Imagen de ${post.title}`}
                 />
               ) : (

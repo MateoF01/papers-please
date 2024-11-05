@@ -4,6 +4,8 @@ import styled from 'styled-components';
 import backgroundImage from './background.png';
 import * as Yup from "yup";
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
 const RootContainer = styled.div`
   background-image: url(${backgroundImage});
   background-size: cover;
@@ -91,7 +93,7 @@ function Profile() {
 
   const fetchProfile = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/user/me', { withCredentials: true });
+      const response = await axios.get(`${backendUrl}/api/user/me`, { withCredentials: true });
       console.log(response.data);
       setProfileData(response.data);
     } catch (err) {
@@ -138,7 +140,7 @@ const handleUpdateEmail = async (e) => {
   }
 
   try {
-    await axios.put('http://localhost:8080/api/user/update/me', {
+    await axios.put(`${backendUrl}/api/user/update/me`, {
       userId: profileData.id,
       newEmail: newEmail,
       newPassword: profileData.password,
@@ -167,7 +169,7 @@ const handleUpdatePassword = async (e) => {
   }
 
   try {
-    await axios.put('http://localhost:8080/api/user/update/me', {
+    await axios.put(`${backendUrl}/api/user/update/me`, {
       userId: profileData.id,
       newEmail: profileData.email,
       newPassword: newPassword,

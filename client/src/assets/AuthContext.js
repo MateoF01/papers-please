@@ -1,6 +1,8 @@
 import React, { createContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -10,7 +12,7 @@ export function AuthProvider({ children }) {
 
   const checkAuthentication = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/user', { withCredentials: true });
+      const response = await axios.get(`${backendUrl}/api/user`, { withCredentials: true });
       setIsAuthenticated(true);
       setIsAdmin(response.data.isAdmin);
     } catch {
@@ -26,7 +28,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const handleLogout = async () => {
-    await axios.post('http://localhost:8080/api/logout', {}, { withCredentials: true });
+    await axios.post(`${backendUrl}/api/logout`, {}, { withCredentials: true });
     setIsAuthenticated(false);
     setIsAdmin(false);
   };

@@ -12,6 +12,8 @@ import DefaultButton from "./components/button/DefaultButton";
 import TextInput from './components/form/input/text';
 import { AuthContext } from './assets/AuthContext';
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
 const loginStyle = {
   backgroundImage: `url(${backgroundImage})`,
   backgroundSize: 'cover',
@@ -96,7 +98,7 @@ function Login() {
   });
 
   const handleSubmit = (values, { setSubmitting, setErrors }) => {
-    axios.post('http://localhost:8080/api/login', values, { withCredentials: true })
+    axios.post(`${backendUrl}/api/login`, values, { withCredentials: true })
       .then(response => {
         setSubmitting(false);
         checkAuthentication(); // Llama a checkAuthentication para actualizar el contexto de autenticación

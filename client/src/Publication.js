@@ -5,6 +5,8 @@ import DefaultButton from './components/button/DefaultButton';
 import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import BackgroundImage from './background.png';
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
 function Publication() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -25,7 +27,7 @@ function Publication() {
       formData.append('image', image); 
     }
 
-    axios.post('http://localhost:8080/api/posts', formData, {
+    axios.post(`${backendUrl}/api/posts`, formData, {
       withCredentials: true,
       headers: {
         'Content-Type': 'multipart/form-data'

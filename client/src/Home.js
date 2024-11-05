@@ -6,6 +6,9 @@ import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import DefaultButton from './components/button/DefaultButton';
 import { AuthContext } from './assets/AuthContext';
 
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
+
 function Home() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +21,7 @@ function Home() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/user', { withCredentials: true });
+        const response = await axios.get(`${backendUrl}/api/user`, { withCredentials: true });
         setUser(response.data);
         setLoading(false);
       } catch (error) {
