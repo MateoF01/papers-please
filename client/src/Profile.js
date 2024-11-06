@@ -31,12 +31,16 @@ const ProfileContainer = styled.div`
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(5px);
   transition: transform 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 5rem;
 `;
 
 const SectionTitle = styled.h2`
   font-size: 1.5rem;
-  color: #333;
-  margin-bottom: 1rem;
+  color: #333;  
+  margin-top: 2rem;
 `;
 
 const InfoText = styled.p`
@@ -64,9 +68,10 @@ const ErrorMessage = styled.div`
 const InputField = styled.input`
   width: 100%;
   padding: 10px;
-  margin: 5px 0;
+  margin: 10px 0;
   border: 1px solid #ccc;
   border-radius: 4px;
+  padding: 10px 0px 10px 10px;
 `;
 
 const UpdateButton = styled.button`
@@ -76,6 +81,7 @@ const UpdateButton = styled.button`
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  width: 180px;
 
   &:hover {
     background-color: #218838;
