@@ -37,7 +37,7 @@ const SortButton = styled.button`
   background: white;
   border: none;
   color: #666;
-  font-size: 1.25rem;
+  font-size: 1rem;
   cursor: pointer;
   margin-bottom: 15px;
   display: flex;
@@ -51,6 +51,7 @@ const SortButton = styled.button`
   // min-width: 124px;
   height: 55px;
   border-radius: 10px;  
+  margin-right: 10px;
   
   &:hover {
     color: #333;
@@ -182,7 +183,7 @@ function PostList() {
       <PostContainer>
         <Header>
           <SortButton onClick={() => handleOrderByChange2()}>
-            {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Nombre'}
+            {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
           </SortButton>
           <SortButton onClick={handleSortChange}>
             {sortOrder === 'DESC' ? '▼' : '▲'}
