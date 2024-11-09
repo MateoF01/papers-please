@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
@@ -22,8 +24,9 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
+        domain: process.env.NODE_ENV === 'production' ? 'papers-please-back.onrender.com' : null,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'None' //esto estaba en lax, y no permitia el intercambio de cookies entre diferentes dominios
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : false
     }
 }));
 

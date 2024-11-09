@@ -198,7 +198,7 @@ const handleUpdatePassword = async (e) => {
       <ProfileContainer>
         <SectionTitle>
           Mi Perfil
-          {profileData?.isAdmin == 1 && <AdminTag>Admin</AdminTag>}
+          {profileData?.isAdmin === 1 && <AdminTag>Admin</AdminTag>}
         </SectionTitle>
         {loading && <div>Cargando...</div>}
         {error && <ErrorMessage>{error}</ErrorMessage>}
