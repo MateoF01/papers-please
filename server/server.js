@@ -23,7 +23,7 @@ app.use(session({
     cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
+        sameSite: 'None' //esto estaba en lax, y no permitia el intercambio de cookies entre diferentes dominios
     }
 }));
 
