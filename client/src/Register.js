@@ -104,7 +104,7 @@ function Register() {
       .matches(/[A-Z]/, 'Debe contener al menos una letra mayúscula')
       .matches(/[a-z]/, 'Debe contener al menos una letra minúscula')
       .matches(/\d/, 'Debe contener al menos un número')
-      .matches(/[^A-Za-z0-9\s]/, 'Debe contener al menos un símbolo especial (e.g. @, $, !, %, *, ?, &)')
+      .matches(/[^A-Za-z0-9\s]/, 'Debe contener al menos un símbolo especial (Ej.: @, $, !, %, *, ?, &)')
       .required('La contraseña es obligatoria'),
   });
 
