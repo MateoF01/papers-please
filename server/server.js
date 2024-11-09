@@ -24,7 +24,7 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
-        domain: process.env.NODE_ENV === 'production' ? 'papers-please-back.onrender.com' : null,
+        domain: process.env.NODE_ENV === 'production' ? 'papers-please-front.onrender.com' : null,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : false
     }
