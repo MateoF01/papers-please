@@ -12,7 +12,7 @@ const db = new sqlite3.Database('./database.db');
 
 app.use(bodyParser.json());
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-front.onrender.com' : 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-front-e4hv.onrender.com' : 'http://localhost:3000',
     credentials: true
 }));
 
