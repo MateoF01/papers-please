@@ -5,6 +5,8 @@ import Login from './Login';
 import Home from './Home';
 import Publication from './Publication';
 import PostList from './PostList';
+import NewForum from './NewForum';
+import ForumList from './ForumList';
 import SinglePost from './SinglePost';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
@@ -155,6 +157,9 @@ function NavbarContent() {
             <NavbarButton onClick={handleNavigateToPublication}>Crear Publicación</NavbarButton>
             <NavbarButton onClick={() => navigate('/posts')}>Ver Publicaciones</NavbarButton>
             <NavbarButton onClick={() => navigate('/my-posts')}>Ver Mis Publicaciones</NavbarButton>
+            <NavbarButton onClick={() => navigate('/new-forum')}>Crear Foro</NavbarButton>
+
+            <NavbarButton onClick={() => navigate('/forums')}>Foros</NavbarButton>
             {isAdmin === 1 && (
               <NavbarButton onClick={() => navigate('/posts-to-validate')}>Validar Publicaciones</NavbarButton>
             )}
@@ -190,6 +195,8 @@ function App() {
           <Route path="/home" element={<AuthenticatedRoute element={Home} />} />
           <Route path="/publication" element={<AuthenticatedRoute element={Publication} />} />
           <Route path="/posts" element={<AuthenticatedRoute element={PostList} />} />
+          <Route path="/forums" element={<AuthenticatedRoute element={ForumList} />} />
+          <Route path="/new-forum" element={<AuthenticatedRoute element={NewForum} />} />
           <Route path="/my-posts" element={<AuthenticatedRoute element={MyPosts} />} />
           <Route path="/post/:id" element={<AuthenticatedRoute element={SinglePost} />} />
           <Route path="/profile" element={<AuthenticatedRoute element={Profile} />} />

@@ -669,7 +669,7 @@ app.get('/api/forums', (req, res) => {
 
     const { orderBy = 'created_at', order = 'DESC' } = req.query;
 
-    const validOrderTypes = ['created_at', 'title'];
+    const validOrderTypes = ['created_at', 'title', 'user_name'];
     const validOrderDirections = ['ASC', 'DESC'];
 
     if (!validOrderTypes.includes(orderBy) || !validOrderDirections.includes(order.toUpperCase())) {
