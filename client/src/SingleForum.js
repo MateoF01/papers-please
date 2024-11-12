@@ -8,8 +8,7 @@ import BackgroundImage from './background.png';
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
 function SingleForum() {
-  
-  const { id } = useParams();  // Obtener el ID del foro desde la URL
+  const { id } = useParams();
   const navigate = useNavigate();
   
   const [forum, setForum] = useState(null);
@@ -17,10 +16,10 @@ function SingleForum() {
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editCommentId, setEditCommentId] = useState(null);
+  const [editCommentText, setEditCommentText] = useState('');
 
-  // Obtener foro y comentarios cuando el componente se monte
   useEffect(() => {
-    // Obtener los detalles del foro
     axios.get(`${backendUrl}/api/forums/${id}`)
       .then(response => {
         setForum(response.data);
@@ -30,7 +29,6 @@ function SingleForum() {
         setError('Error al cargar el foro.');
       });
     
-    // Obtener los comentarios del foro
     axios.get(`${backendUrl}/api/forums/${id}/comments`)
       .then(response => {
         setComments(response.data);
@@ -44,24 +42,13 @@ function SingleForum() {
       });
   }, [id]);
 
-  // Manejar la publicación de un nuevo comentario
   const handleAddComment = (e) => {
     e.preventDefault();
     setLoading(true);
-
-    // Realizar solicitud POST para agregar un comentario
     axios.post(`${backendUrl}/api/forums/${id}/comments`, { comment: newComment }, { withCredentials: true })
       .then(response => {
-        // Después de agregar el comentario, obtener todos los comentarios actualizados
-        axios.get(`${backendUrl}/api/forums/${id}/comments`)
-          .then(response => {
-            setComments(response.data);  // Actualizar los comentarios con la lista completa
-            setNewComment('');  // Limpiar el campo de texto
-          })
-          .catch(error => {
-            console.error('Error fetching updated comments:', error.response?.data || error.message);
-            setError('Error al cargar los comentarios actualizados.');
-          });
+        fetchComments();
+        setNewComment('');
       })
       .catch(error => {
         console.error('Error adding comment:', error.response?.data || error.message);
@@ -72,36 +59,78 @@ function SingleForum() {
       });
   };
 
-  const ForumStyle = {
-    backgroundImage: `url(${BackgroundImage})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
+  const fetchComments = () => {
+    axios.get(`${backendUrl}/api/forums/${id}/comments`)
+      .then(response => {
+        setComments(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching updated comments:', error.response?.data || error.message);
+        setError('Error al cargar los comentarios actualizados.');
+      });
   };
 
-  const FormContainerStyle = {
-    border: '2px solid #A1DA39',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    padding: '30px',
-    borderRadius: '10px',
-    maxWidth: '600px',
-    width: '100%',
+  const handleEditComment = (commentId) => {
+    setEditCommentId(commentId);
+    const commentToEdit = comments.find(comment => comment.id === commentId);
+    setEditCommentText(commentToEdit.body);
   };
 
-  const CommentStyle = {
-    borderBottom: '1px solid #ccc',
-    padding: '10px',
-    marginBottom: '10px',
+  const handleUpdateComment = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    axios.put(`${backendUrl}/api/forums/${id}/comments/${editCommentId}`, { body: editCommentText }, { withCredentials: true })
+      .then(response => {
+        fetchComments();
+        setEditCommentId(null);
+        setEditCommentText('');
+      })
+      .catch(error => {
+        console.error('Error updating comment:', error.response?.data || error.message);
+        setError('Error al actualizar el comentario.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  const handleDeleteComment = (commentId) => {
+    if (window.confirm('¿Seguro que deseas eliminar este comentario?')) {
+      setLoading(true);
+      axios.delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { withCredentials: true })
+        .then(response => {
+          fetchComments();
+        })
+        .catch(error => {
+          console.error('Error deleting comment:', error.response?.data || error.message);
+          setError('Error al eliminar el comentario.');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
   };
 
   return (
-    <div style={ForumStyle}>
-      <div style={FormContainerStyle}>
+    <div style={{
+      backgroundImage: `url(${BackgroundImage})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+    }}>
+      <div style={{
+        border: '2px solid #A1DA39',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        padding: '30px',
+        borderRadius: '10px',
+        maxWidth: '600px',
+        width: '100%',
+      }}>
         {loading ? (
           <TailSpin stroke="#000000" />
         ) : error ? (
@@ -117,8 +146,29 @@ function SingleForum() {
 
             <div style={{ marginBottom: '20px' }}>
               {comments.map(comment => (
-                <div key={comment.id} style={CommentStyle}>
-                  <p><strong>{comment.user_name}:</strong> {comment.body}</p>
+                <div key={comment.id} style={{
+                  borderBottom: '1px solid #ccc',
+                  padding: '10px',
+                  marginBottom: '10px',
+                }}>
+                  {editCommentId === comment.id ? (
+                    <form onSubmit={handleUpdateComment}>
+                      <textarea
+                        value={editCommentText}
+                        onChange={(e) => setEditCommentText(e.target.value)}
+                        required
+                        style={{ width: '100%', height: '100px', marginBottom: '10px' }}
+                      />
+                      <DefaultButton type="submit" content="Guardar cambios" />
+                      <DefaultButton type="button" content="Cancelar" handleClick={() => setEditCommentId(null)} />
+                    </form>
+                  ) : (
+                    <>
+                      <p><strong>{comment.user_name}:</strong> {comment.body}</p>
+                      <DefaultButton content="Editar" handleClick={() => handleEditComment(comment.id)} />
+                      <DefaultButton content="Eliminar" handleClick={() => handleDeleteComment(comment.id)} />
+                    </>
+                  )}
                 </div>
               ))}
             </div>
