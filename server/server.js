@@ -100,6 +100,7 @@ const verificarAutenticacion = (req, res, next) => {
         next();
     } else {
         res.status(401).json({ error: 'No autorizado' });
+        console.log('Set-Cookie header:', res.get('Set-Cookie'));
     }
 };
 
