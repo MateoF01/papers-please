@@ -10,6 +10,19 @@ const { check, validationResult } = require('express-validator');
 const app = express();
 const db = new sqlite3.Database('./database.db');
 
+const TAGS = {
+    0: 1,    // matemática
+    1: 2,    // ciencia
+    2: 4,    // filosofía
+    3: 8,    // historia
+    4: 16,   // literatura
+    5: 32,   // tecnologia
+    6: 64,   // arte
+    7: 128,  // politica
+    8: 256,  // economia
+    9: 512,  // psicologia
+};
+
 app.use(bodyParser.json());
 app.use(cors({
     origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-corp.github.io' : 'http://localhost:3000',
@@ -51,7 +64,7 @@ const upload = multer({ storage });
 
 app.post('/api/register', (req, res) => {
     const { userName, email, password } = req.body;
-
+0
     // Validación de la contraseña
     const passwordRegex = /^(?=.*[a-zA-ZÀ-ÿ])(?=.*[A-ZÀ-ÿ])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{12,}$/;
     if (!passwordRegex.test(password)) {
@@ -260,11 +273,11 @@ app.post('/api/logout', (req, res) => {
 });
 
 
-
+// agrego nuevo posteo
 app.post('/api/posts', verificarAutenticacion, upload.single('image'), (req, res) => {
     console.log('Received post request:', req.body);
     console.log('User ID from session:', req.session.usuarioId);
-    const { title, body } = req.body;
+    const { title, body , tags} = req.body;
     const userId = req.session.usuarioId;
     const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
@@ -272,9 +285,22 @@ app.post('/api/posts', verificarAutenticacion, upload.single('image'), (req, res
         return res.status(400).json({ error: 'Title and body are required' });
     }
 
-    const sql = `INSERT INTO posts (user_id, title, body, image, created_at) VALUES (?, ?, ?, ?, datetime('now'))`;
-    
-    db.run(sql, [userId, title, body, imagePath], function(err) {
+    if (!tags) {
+        return res.status(400).json({ error: 'At least one Tag is required' });
+    }
+
+    let tagsValue = 0
+    if(Array.isArray(tags)){
+        tags.forEach(tagId => {
+            if (TAGS[tagId] !== undefined) {
+                tagsValue |= TAGS[tagId];  // Sumar el valor de la etiqueta usando OR bitwise
+            }
+        });
+    }
+
+    const sql = `INSERT INTO posts (user_id, title, body, image, tags, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))`;
+
+    db.run(sql, [userId, title, body, imagePath, tagsValue], function(err) {
         if (err) {
             console.error('Error creating post:', err);
             return res.status(500).json({ error: 'Error al crear la publicación' });
@@ -286,6 +312,7 @@ app.post('/api/posts', verificarAutenticacion, upload.single('image'), (req, res
             title,
             body,
             image: imagePath,
+            tags: tagsValue,
             created_at: new Date().toISOString()
         });
     });
@@ -310,15 +337,21 @@ app.get('/api/posts', (req, res) => {
         JOIN users ON posts.user_id = users.id 
         ORDER BY ${orderBy} ${order.toUpperCase()}
     `;
-    
 
-    db.all(sql, [], (err, rows) => {
+    db.all(sql, [], (err, posts) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
 
-        console.log(rows);
-        res.json(rows);
+        const postsWithTags = posts.map(post => {
+            const decodedTags = Object.keys(TAGS).filter(tagId => (post.tags & TAGS[tagId]) !== 0);
+            return {
+                ...post,
+                tags: decodedTags.map(Number)
+            };
+        });
+
+        res.json(postsWithTags);
     });
 });
 
@@ -346,7 +379,17 @@ app.get('/api/posts/to-validate', (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-        res.json(rows);
+
+        const postsWithTags = rows.map(rows => {
+            const decodedTags = Object.keys(TAGS).filter(tagId => (rows.tags & TAGS[tagId]) !== 0);
+            return {
+                ...rows,
+                tags: decodedTags.map(Number)
+            };
+        });
+
+        res.json(postsWithTags);
+        // res.json(rows);
     });
 });
 
@@ -389,7 +432,13 @@ app.get('/api/posts/:id', (req, res) => {
         if (!row) {
             return res.status(404).json({ error: 'Post not found' });
         }
-        res.json(row);
+
+        const decodedTags = Object.keys(TAGS).filter(tagId => (row.tags & TAGS[tagId]) !== 0).map(Number);
+
+        res.json({
+            ...row,
+            tags: decodedTags  // Array de IDs de tags
+        });
     });
 });
 
@@ -417,13 +466,24 @@ app.get('/api/posts/user/me', verificarAutenticacion, (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-        res.json(rows);
+
+        const postsWithTags = rows.map(rows => {
+            const decodedTags = Object.keys(TAGS).filter(tagId => (rows.tags & TAGS[tagId]) !== 0);
+            return {
+                ...rows,
+                tags: decodedTags.map(Number)
+            };
+        });
+
+        res.json(postsWithTags);
+        // res.json(rows);
     });
 });
 
 // Actualizo un posteo
+
 app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, res) => {
-    const { title, body } = req.body;
+    const { title, body, tags } = req.body;
     const newImagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
     // Valido que el posteo pertenezca al usuario loggeado
@@ -438,9 +498,19 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
             return res.status(403).json({ error: 'Not authorized to update this post' });
         }
 
+        // Calcular el valor de tags; si `tags` está vacío o no se envía, `tagsValue` será 0
+        let tagsValue = 0;
+        if (Array.isArray(tags) && tags.length > 0) {
+            tags.forEach(tagId => {
+                if (TAGS[tagId] !== undefined) {
+                    tagsValue |= TAGS[tagId];  // Sumar el valor de la etiqueta usando OR bitwise
+                }
+            });
+        }
+
         // Actualizar la publicación en la base de datos
-        const sql = `UPDATE posts SET title = ?, body = ?, image = COALESCE(?, image) WHERE id = ?`;
-        db.run(sql, [title, body, newImagePath, req.params.id], function(err) {
+        const sql = `UPDATE posts SET title = ?, body = ?, tags = ?, image = COALESCE(?, image) WHERE id = ?`;
+        db.run(sql, [title, body, tagsValue, newImagePath, req.params.id], function(err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
@@ -457,6 +527,52 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
         });
     });
 });
+
+
+// app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, res) => {
+//     const { title, body , tags} = req.body;
+//     const newImagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+//     // Valido que el posteo pertenezca al usuario loggeado
+//     db.get('SELECT * FROM posts WHERE id = ?', [req.params.id], (err, row) => {
+//         if (err) {
+//             return res.status(500).json({ error: err.message });
+//         }
+//         if (!row) {
+//             return res.status(404).json({ error: 'Post not found' });
+//         }
+//         if (row.user_id !== req.session.usuarioId) {
+//             return res.status(403).json({ error: 'Not authorized to update this post' });
+//         }
+
+//         let tagsValue = 0;
+//             if(Array.isArray(tags) && tags.length > 0){
+//                 tags.forEach(tagId => {
+//                     if (TAGS[tagId] !== undefined) {
+//                         tagsValue |= TAGS[tagId];  // Sumar el valor de la etiqueta usando OR bitwise
+//                     }
+//                 });
+//             }
+        
+//         // Actualizar la publicación en la base de datos
+//         const sql = `UPDATE posts SET title = ?, body = ?, tags = ?, image = COALESCE(?, image) WHERE id = ?`;
+//         db.run(sql, [title, body, tagsValue, newImagePath, req.params.id], function(err) {
+//             if (err) {
+//                 return res.status(500).json({ error: err.message });
+//             }
+
+//             // Eliminar la imagen anterior si se ha cargado una nueva
+//             if (newImagePath && row.image) {
+//                 const oldImagePath = `./uploads/${path.basename(row.image)}`;
+//                 fs.unlink(oldImagePath, (unlinkErr) => {
+//                     if (unlinkErr) console.error('Error deleting old image:', unlinkErr);
+//                 });
+//             }
+
+//             res.json({ message: 'Post updated successfully' });
+//         });
+//     });
+// });
 
 // Borro un posteo
 app.delete('/api/posts/:id', verificarAutenticacion, (req, res) => {
@@ -732,8 +848,8 @@ app.put('/api/forums/:id', verificarAutenticacion, (req, res) => {
         }
 
         // Actualizar la publicación en la base de datos
-        const sql = `UPDATE forums SET title = ?, body = ? WHERE id = ?`;
-        db.run(sql, [title, body, req.params.id], function(err) {
+        const sql = `UPDATE forums SET title = ?, body = ?, tag = ?, WHERE id = ?`;
+        db.run(sql, [title, body, tagsValue, req.params.id], function(err) {uu
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
