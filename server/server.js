@@ -12,7 +12,7 @@ const db = new sqlite3.Database('./database.db');
 
 app.use(bodyParser.json());
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-front.onrender.com' : 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-front-e4hv.onrender.com' : 'http://localhost:3000',
     credentials: true
 }));
 
@@ -24,7 +24,7 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
-        domain: process.env.NODE_ENV === 'production' ? 'onrender.com' : null,
+        domain: process.env.NODE_ENV === 'production' ? 'https://papers-please-front.onrender.com' : null,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : false
     }
@@ -518,7 +518,7 @@ app.post('/api/posts/:postId/reviews',
     }
   );
   
-  // obtener reseña
+  // obtener reseñas
   app.get('/api/posts/:postId/reviews', (req, res) => {
     const { postId } = req.params;
     const sql = `
@@ -619,6 +619,274 @@ app.put('/api/reviews/:reviewId', verificarAutenticacion, [
     });
   }
 
+
+////// intento poner foros
+
+app.post('/api/forums', verificarAutenticacion, (req, res) => {
+    console.log('Received post request:', req.body);
+    console.log('User ID from session:', req.session.usuarioId);
+    const { title, body } = req.body;
+    const userId = req.session.usuarioId;
+    // const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+
+    if (!title || !body) {
+        return res.status(400).json({ error: 'Title and body are required' });
+    }
+    
+    db.serialize(() => {
+    // Crear la tabla forums si no existe
+    db.run(`
+      CREATE TABLE IF NOT EXISTS forums (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insertar un nuevo foro
+    const sql = `INSERT INTO forums (user_id, title, body, created_at) VALUES (?, ?, ?, datetime('now'))`;
+    db.run(sql, [userId, title, body], function(err) {
+        if (err) {
+            console.error('Error creating forum:', err);
+            return res.status(500).json({ error: 'Error al crear el foro' });
+        }
+        console.log(`A new forum was created with ID ${this.lastID}`);
+        res.status(201).json({
+        id: this.lastID,
+        user_id: userId,
+        title,
+        body,
+        created_at: new Date().toISOString()
+        })
+    });
+  });
+});
+   
+// Me traigo todos los foros con orden
+app.get('/api/forums', (req, res) => {
+
+    const { orderBy = 'created_at', order = 'DESC' } = req.query;
+
+    const validOrderTypes = ['created_at', 'title'];
+    const validOrderDirections = ['ASC', 'DESC'];
+
+    if (!validOrderTypes.includes(orderBy) || !validOrderDirections.includes(order.toUpperCase())) {
+        return res.status(400).json({ error: 'Invalid order parameters' });
+    }
+    
+    const sql = `
+        SELECT forums.*, users.user_name, users.isAdmin as user_isAdmin
+        FROM forums
+        JOIN users ON forums.user_id = users.id 
+        ORDER BY ${orderBy} ${order.toUpperCase()}
+    `;
+    
+
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        console.log(rows);
+        res.json(rows);
+    });
+});
+
+// Traigo un foro individual
+app.get('/api/forums/:id', (req, res) => {
+    const sql = `
+        SELECT forums.*, users.user_name, users.isAdmin as user_isAdmin
+        FROM forums 
+        JOIN users ON forums.user_id = users.id 
+        WHERE forums.id = ?
+    `;
+    
+    db.get(sql, [req.params.id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        res.json(row);
+    });
+});
+
+// Modifico un Foro
+app.put('/api/forums/:id', verificarAutenticacion, (req, res) => {
+    const { title, body } = req.body;
+
+    // Valido que el posteo pertenezca al usuario loggeado
+    db.get('SELECT * FROM forums WHERE id = ?', [req.params.id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Forum not found' });
+        }
+        if (row.user_id !== req.session.usuarioId) {
+            return res.status(403).json({ error: 'Not authorized to update this post' });
+        }
+
+        // Actualizar la publicación en la base de datos
+        const sql = `UPDATE forums SET title = ?, body = ? WHERE id = ?`;
+        db.run(sql, [title, body, req.params.id], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            
+            res.json({ message: 'Forum updated successfully' });
+        });
+    });
+});
+
+// Borro un foro
+app.delete('/api/forums/:id', verificarAutenticacion, (req, res) => {
+    const forumId = req.params.id;
+    const userId = req.session.usuarioId;
+    const isAdmin = req.body.isAdmin === 1;
+
+    db.get('SELECT user_id FROM forums WHERE id = ?', [forumId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Forum not found' });
+        }
+        if (row.user_id !== userId && !isAdmin) {
+            return res.status(403).json({ error: 'Not authorized to delete this forum' });
+        }
+        
+        const sql = `DELETE FROM forums WHERE id = ?`;
+        db.run(sql, [forumId], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ message: 'Forum deleted successfully' });
+        });
+    });
+});
+
+// cargar comentario a foro
+app.post('/api/forums/:forumId/comments', 
+    verificarAutenticacion,
+    (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+  
+      const { forumId } = req.params;
+      const { comment } = req.body;
+      const userId = req.session.usuarioId;
+
+      db.serialize(() => {
+    // Crear la tabla comments si no existe
+    db.run(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        forum_id INTEGER NOT NULL,
+        body TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insertar un nuevo comentario
+    const sql = `INSERT INTO comments (user_id, forum_id, body, created_at) VALUES (?, ?, ?, datetime('now'))`;
+    db.run(sql, [userId, forumId, comment], function(err) {
+        if (err) {
+            console.error('Error creating comment:', err);
+            return res.status(500).json({ error: 'Error al crear el comentario' });
+        }
+        console.log(`A new forum was created with ID ${this.lastID}`);
+        res.status(201).json({
+        id: this.lastID,
+        user_id: userId,
+        forum_id: forumId,
+        comment,
+        created_at: new Date().toISOString()
+        })
+    });
+  });
+});
+      
+  // obtener comentarios
+  app.get('/api/forums/:forumId/comments', (req, res) => {
+    const { forumId } = req.params;
+    const sql = `
+      SELECT comments.*, users.user_name
+      FROM comments 
+      JOIN users ON comments.user_id = users.id 
+      WHERE comments.forum_id = ?
+      ORDER BY comments.created_at DESC
+    `;
+    
+    db.all(sql, [forumId], (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(rows);
+    });
+  });
+
+
+  // Modifico un comentario
+app.put('/api/forums/:id/comments/:id', verificarAutenticacion, (req, res) => {
+    const {body } = req.body;
+
+    // Valido que el comentario pertenezca al usuario loggeado
+    db.get('SELECT * FROM comments WHERE id = ?', [req.params.id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Forum not found' });
+        }
+        if (row.user_id !== req.session.usuarioId) {
+            return res.status(403).json({ error: 'Not authorized to update this post' });
+        }
+
+        // Actualizar el comentario en la base de datos
+        const sql = `UPDATE comments SET body = ? WHERE id = ?`
+        db.run(sql, [body, req.params.id], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            
+            res.json({ message: 'Comment updated successfully' });
+        });
+    });
+});
+
+// Borro un comentario
+app.delete('/api/forums/:id/comments/:id', verificarAutenticacion, (req, res) => {
+const commentId = req.params.id;
+    const userId = req.session.usuarioId;
+    const isAdmin = req.body.isAdmin === 1;
+
+    db.get('SELECT user_id FROM comments WHERE id = ?', [commentId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+        if (row.user_id !== userId && !isAdmin) {
+            return res.status(403).json({ error: 'Not authorized to delete this post' });
+        }
+        
+        const sql = `DELETE FROM comments WHERE id = ?`;
+        db.run(sql, [commentId], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ message: 'Comment deleted successfully' });
+        });
+    });
+});
 
 // Cierra la conexión a la base de datos al finalizar el servidor
 app.on('exit', () => {
