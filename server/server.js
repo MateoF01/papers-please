@@ -517,7 +517,7 @@ app.post('/api/posts/:postId/reviews',
     }
   );
   
-  // obtener reseña
+  // obtener reseñas
   app.get('/api/posts/:postId/reviews', (req, res) => {
     const { postId } = req.params;
     const sql = `
@@ -713,13 +713,41 @@ app.get('/api/forums/:id', (req, res) => {
     });
 });
 
+// Modifico un Foro
+app.put('/api/forums/:id', verificarAutenticacion, (req, res) => {
+    const { title, body } = req.body;
+
+    // Valido que el posteo pertenezca al usuario loggeado
+    db.get('SELECT * FROM forums WHERE id = ?', [req.params.id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Forum not found' });
+        }
+        if (row.user_id !== req.session.usuarioId) {
+            return res.status(403).json({ error: 'Not authorized to update this post' });
+        }
+
+        // Actualizar la publicación en la base de datos
+        const sql = `UPDATE forums SET title = ?, body = ? WHERE id = ?`;
+        db.run(sql, [title, body, req.params.id], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            
+            res.json({ message: 'Forum updated successfully' });
+        });
+    });
+});
+
 // Borro un foro
 app.delete('/api/forums/:id', verificarAutenticacion, (req, res) => {
-    const postId = req.params.id;
+    const forumId = req.params.id;
     const userId = req.session.usuarioId;
     const isAdmin = req.body.isAdmin === 1;
 
-    db.get('SELECT user_id FROM forums WHERE id = ?', [postId], (err, row) => {
+    db.get('SELECT user_id FROM forums WHERE id = ?', [forumId], (err, row) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
@@ -727,11 +755,11 @@ app.delete('/api/forums/:id', verificarAutenticacion, (req, res) => {
             return res.status(404).json({ error: 'Forum not found' });
         }
         if (row.user_id !== userId && !isAdmin) {
-            return res.status(403).json({ error: 'Not authorized to delete this post' });
+            return res.status(403).json({ error: 'Not authorized to delete this forum' });
         }
         
         const sql = `DELETE FROM forums WHERE id = ?`;
-        db.run(sql, [postId], function(err) {
+        db.run(sql, [forumId], function(err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
@@ -802,6 +830,62 @@ app.post('/api/forums/:forumId/comments',
       res.json(rows);
     });
   });
+
+
+  // Modifico un comentario
+app.put('/api/forums/:id/comments/:id', verificarAutenticacion, (req, res) => {
+    const {body } = req.body;
+
+    // Valido que el comentario pertenezca al usuario loggeado
+    db.get('SELECT * FROM comments WHERE id = ?', [req.params.id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Forum not found' });
+        }
+        if (row.user_id !== req.session.usuarioId) {
+            return res.status(403).json({ error: 'Not authorized to update this post' });
+        }
+
+        // Actualizar el comentario en la base de datos
+        const sql = `UPDATE comments SET body = ? WHERE id = ?`
+        db.run(sql, [body, req.params.id], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            
+            res.json({ message: 'Comment updated successfully' });
+        });
+    });
+});
+
+// Borro un comentario
+app.delete('/api/forums/:id/comments/:id', verificarAutenticacion, (req, res) => {
+const commentId = req.params.id;
+    const userId = req.session.usuarioId;
+    const isAdmin = req.body.isAdmin === 1;
+
+    db.get('SELECT user_id FROM comments WHERE id = ?', [commentId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+        if (row.user_id !== userId && !isAdmin) {
+            return res.status(403).json({ error: 'Not authorized to delete this post' });
+        }
+        
+        const sql = `DELETE FROM comments WHERE id = ?`;
+        db.run(sql, [commentId], function(err) {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ message: 'Comment deleted successfully' });
+        });
+    });
+});
 
 // Cierra la conexión a la base de datos al finalizar el servidor
 app.on('exit', () => {
