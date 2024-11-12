@@ -624,7 +624,7 @@ app.put('/api/reviews/:reviewId', verificarAutenticacion, [
 ////// intento poner foros
 
 app.post('/api/forums', verificarAutenticacion, (req, res) => {
-    console.log('Received post request:', req.body);
+    console.log('Received post request:', req);
     console.log('User ID from session:', req.session.usuarioId);
     const { title, body } = req.body;
     const userId = req.session.usuarioId;
@@ -709,7 +709,7 @@ app.get('/api/forums/:id', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
         if (!row) {
-            return res.status(404).json({ error: 'Post not found' });
+            return res.status(404).json({ error: 'Forum not found' });
         }
         res.json(row);
     });

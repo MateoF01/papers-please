@@ -7,6 +7,7 @@ import Publication from './Publication';
 import PostList from './PostList';
 import NewForum from './NewForum';
 import ForumList from './ForumList';
+import SingleForum from './SingleForum';
 import SinglePost from './SinglePost';
 import backgroundImage from './background.png';
 import styled from 'styled-components';
@@ -199,6 +200,7 @@ function App() {
           <Route path="/new-forum" element={<AuthenticatedRoute element={NewForum} />} />
           <Route path="/my-posts" element={<AuthenticatedRoute element={MyPosts} />} />
           <Route path="/post/:id" element={<AuthenticatedRoute element={SinglePost} />} />
+          <Route path="/forums/:id" element={<AuthenticatedRoute element={SingleForum} />} />
           <Route path="/profile" element={<AuthenticatedRoute element={Profile} />} />
 
 

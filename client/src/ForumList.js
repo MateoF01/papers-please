@@ -209,7 +209,7 @@ function ForumList() {
         {loading && <div>Cargando...</div>}
         {error && <div>{error}</div>}
         {!loading && !error && sortedForums.map(forum => (
-          <ForumLink to={`/forum/${forum.id}`} key={forum.id}>
+          <ForumLink to={`/forums/${forum.id}`} key={forum.id}>
             <ForumCard>
               <ForumContent>
                 <ForumTitle>{forum.title}</ForumTitle>
