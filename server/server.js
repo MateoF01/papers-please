@@ -848,8 +848,8 @@ app.put('/api/forums/:id', verificarAutenticacion, (req, res) => {
         }
 
         // Actualizar la publicación en la base de datos
-        const sql = `UPDATE forums SET title = ?, body = ?, tag = ?, WHERE id = ?`;
-        db.run(sql, [title, body, tagsValue, req.params.id], function(err) {uu
+        const sql = `UPDATE forums SET title = ?, body = ? WHERE id = ?`;
+        db.run(sql, [title, body, req.params.id], function(err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }

@@ -10,31 +10,34 @@ const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.en
 function SingleForum() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [forum, setForum] = useState(null);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+  const [editingForum, setEditingForum] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [forumTitle, setForumTitle] = useState('');
+  const [forumBody, setForumBody] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editCommentId, setEditCommentId] = useState(null);
-  const [editCommentText, setEditCommentText] = useState('');
 
+  // Cargar foro y comentarios
   useEffect(() => {
     axios.get(`${backendUrl}/api/forums/${id}`)
       .then(response => {
         setForum(response.data);
+        setForumTitle(response.data.title);
+        setForumBody(response.data.body);
       })
       .catch(error => {
-        console.error('Error fetching forum:', error.response?.data || error.message);
         setError('Error al cargar el foro.');
       });
-    
+
     axios.get(`${backendUrl}/api/forums/${id}/comments`)
       .then(response => {
         setComments(response.data);
       })
       .catch(error => {
-        console.error('Error fetching comments:', error.response?.data || error.message);
         setError('Error al cargar los comentarios.');
       })
       .finally(() => {
@@ -42,16 +45,16 @@ function SingleForum() {
       });
   }, [id]);
 
+  // Agregar comentario
   const handleAddComment = (e) => {
     e.preventDefault();
     setLoading(true);
     axios.post(`${backendUrl}/api/forums/${id}/comments`, { comment: newComment }, { withCredentials: true })
       .then(response => {
-        fetchComments();
+        setComments([...comments, response.data]);
         setNewComment('');
       })
       .catch(error => {
-        console.error('Error adding comment:', error.response?.data || error.message);
         setError('Error al agregar el comentario.');
       })
       .finally(() => {
@@ -59,66 +62,58 @@ function SingleForum() {
       });
   };
 
-  const fetchComments = () => {
-    axios.get(`${backendUrl}/api/forums/${id}/comments`)
-      .then(response => {
-        setComments(response.data);
+  // Editar foro
+  const handleEditForum = () => {
+    axios.put(`${backendUrl}/api/forums/${id}`, { title: forumTitle, body: forumBody }, { withCredentials: true })
+      .then(() => {
+        setEditingForum(false);
+        setForum(prev => ({ ...prev, title: forumTitle, body: forumBody }));
       })
       .catch(error => {
-        console.error('Error fetching updated comments:', error.response?.data || error.message);
-        setError('Error al cargar los comentarios actualizados.');
+        setError('Error al actualizar el foro.');
       });
   };
 
-  const handleEditComment = (commentId) => {
-    setEditCommentId(commentId);
-    const commentToEdit = comments.find(comment => comment.id === commentId);
-    setEditCommentText(commentToEdit.body);
-  };
-
-  const handleUpdateComment = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    axios.put(`${backendUrl}/api/forums/${id}/comments/${editCommentId}`, { body: editCommentText }, { withCredentials: true })
-      .then(response => {
-        fetchComments();
-        setEditCommentId(null);
-        setEditCommentText('');
+  // Eliminar foro
+  const handleDeleteForum = () => {
+    axios.delete(`${backendUrl}/api/forums/${id}`, { withCredentials: true })
+      .then(() => {
+        navigate('/forums');
       })
       .catch(error => {
-        console.error('Error updating comment:', error.response?.data || error.message);
+        setError('Error al eliminar el foro.');
+      });
+  };
+
+  // Editar comentario
+  const handleEditComment = (commentId, updatedComment) => {
+    axios.put(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { body: updatedComment }, { withCredentials: true })
+      .then(() => {
+        setComments(comments.map(comment => comment.id === commentId ? { ...comment, body: updatedComment } : comment));
+        setEditingCommentId(null);
+      })
+      .catch(error => {
         setError('Error al actualizar el comentario.');
-      })
-      .finally(() => {
-        setLoading(false);
       });
   };
 
+  // Eliminar comentario
   const handleDeleteComment = (commentId) => {
-    if (window.confirm('¿Seguro que deseas eliminar este comentario?')) {
-      setLoading(true);
-      axios.delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { withCredentials: true })
-        .then(response => {
-          fetchComments();
-        })
-        .catch(error => {
-          console.error('Error deleting comment:', error.response?.data || error.message);
-          setError('Error al eliminar el comentario.');
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    }
+    axios.delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { withCredentials: true })
+      .then(() => {
+        setComments(comments.filter(comment => comment.id !== commentId));
+      })
+      .catch(error => {
+        setError('Error al eliminar el comentario.');
+      });
   };
 
   return (
     <div style={{
       backgroundImage: `url(${BackgroundImage})`,
       backgroundSize: 'cover',
-      backgroundPosition: 'center',
       minHeight: '100vh',
       display: 'flex',
-      flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
@@ -137,65 +132,65 @@ function SingleForum() {
           <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>
         ) : (
           <>
-            <h1 style={{ textAlign: 'center', marginBottom: '20px', color: '#333' }}>{forum.title}</h1>
-            <p style={{ textAlign: 'center', fontStyle: 'italic' }}>Por: {forum.user_name}</p>
-            <p style={{ marginBottom: '20px' }}>{forum.body}</p>
+            {editingForum ? (
+              <>
+                <input
+                  type="text"
+                  value={forumTitle}
+                  onChange={(e) => setForumTitle(e.target.value)}
+                  style={{ marginBottom: '10px', padding: '5px' }}
+                />
+                <textarea
+                  value={forumBody}
+                  onChange={(e) => setForumBody(e.target.value)}
+                  style={{ marginBottom: '10px', padding: '5px' }}
+                />
+                <DefaultButton content="Guardar" handleClick={handleEditForum} />
+                <DefaultButton content="Cancelar" handleClick={() => setEditingForum(false)} />
+              </>
+            ) : (
+              <>
+                <h1>{forum.title}</h1>
+                <p>{forum.body}</p>
+                <DefaultButton content="Editar Foro" handleClick={() => setEditingForum(true)} />
+                <DefaultButton content="Eliminar Foro" handleClick={handleDeleteForum} />
+              </>
+            )}
 
             <h3>Comentarios:</h3>
-            {comments.length === 0 && <p>No hay comentarios aún.</p>}
-
-            <div style={{ marginBottom: '20px' }}>
-              {comments.map(comment => (
-                <div key={comment.id} style={{
-                  borderBottom: '1px solid #ccc',
-                  padding: '10px',
-                  marginBottom: '10px',
-                }}>
-                  {editCommentId === comment.id ? (
-                    <form onSubmit={handleUpdateComment}>
-                      <textarea
-                        value={editCommentText}
-                        onChange={(e) => setEditCommentText(e.target.value)}
-                        required
-                        style={{ width: '100%', height: '100px', marginBottom: '10px' }}
-                      />
-                      <DefaultButton type="submit" content="Guardar cambios" />
-                      <DefaultButton type="button" content="Cancelar" handleClick={() => setEditCommentId(null)} />
-                    </form>
-                  ) : (
-                    <>
-                      <p><strong>{comment.user_name}:</strong> {comment.body}</p>
-                      <DefaultButton content="Editar" handleClick={() => handleEditComment(comment.id)} />
-                      <DefaultButton content="Eliminar" handleClick={() => handleDeleteComment(comment.id)} />
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
+            {comments.map(comment => (
+              <div key={comment.id} style={{ borderBottom: '1px solid #ccc', padding: '10px', marginBottom: '10px' }}>
+                {editingCommentId === comment.id ? (
+                  <>
+                    <textarea
+                      value={comment.body}
+                      onChange={(e) => handleEditComment(comment.id, e.target.value)}
+                      style={{ marginBottom: '10px', padding: '5px' }}
+                    />
+                    <DefaultButton content="Guardar" handleClick={() => handleEditComment(comment.id, comment.body)} />
+                    <DefaultButton content="Cancelar" handleClick={() => setEditingCommentId(null)} />
+                  </>
+                ) : (
+                  <>
+                    <p><strong>{comment.user_name}:</strong> {comment.body}</p>
+                    <DefaultButton content="Editar" handleClick={() => setEditingCommentId(comment.id)} />
+                    <DefaultButton content="Eliminar" handleClick={() => handleDeleteComment(comment.id)} />
+                  </>
+                )}
+              </div>
+            ))}
 
             <h3>Agregar comentario</h3>
-            <form onSubmit={handleAddComment} style={{ display: 'flex', flexDirection: 'column' }}>
+            <form onSubmit={handleAddComment}>
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Escribe tu comentario"
                 required
-                style={{ marginBottom: '20px', padding: '10px', fontSize: '16px', borderRadius: '4px', border: '2px solid #A1DA39', height: '150px' }}
+                style={{ marginBottom: '10px', padding: '10px' }}
               />
-              <DefaultButton
-                type="submit"
-                disabled={loading || !newComment}
-                content={loading ? <TailSpin stroke="#000000" /> : 'Agregar Comentario'}
-              />
+              <DefaultButton content="Agregar Comentario" type="submit" />
             </form>
-            <div style={{ marginTop: '20px' }}>
-              <DefaultButton
-                type="button"
-                handleClick={() => navigate('/forums')}
-                content="Volver a Foros"
-                secondary
-              />
-            </div>
           </>
         )}
       </div>
