@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/papers-please/static/css/main.e6c13ad2.css",
-    "main.js": "/papers-please/static/js/main.a14a6feb.js",
+    "main.js": "/papers-please/static/js/main.caee9653.js",
     "static/js/453.258b012d.chunk.js": "/papers-please/static/js/453.258b012d.chunk.js",
     "static/media/background.png": "/papers-please/static/media/background.b0be5123fe19d5b97e38.png",
     "static/media/Inter-Variable.ttf": "/papers-please/static/media/Inter-Variable.f958c681d7293226a319.ttf",
@@ -11,11 +11,11 @@
     "static/media/Inter-Regular.ttf": "/papers-please/static/media/Inter-Regular.9cd7588f47651215d52f.ttf",
     "index.html": "/papers-please/index.html",
     "main.e6c13ad2.css.map": "/papers-please/static/css/main.e6c13ad2.css.map",
-    "main.a14a6feb.js.map": "/papers-please/static/js/main.a14a6feb.js.map",
+    "main.caee9653.js.map": "/papers-please/static/js/main.caee9653.js.map",
     "453.258b012d.chunk.js.map": "/papers-please/static/js/453.258b012d.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.a14a6feb.js"
+    "static/js/main.caee9653.js"
   ]
 }
