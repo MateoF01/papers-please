@@ -19,35 +19,35 @@ function Home() {
   const { isAuthenticated, handleLogout } = useContext(AuthContext);
 
   useEffect(() => {
-    // const fetchUser = async () => {
-    //   try {
-    //     const response = await axios.get(`${backendUrl}/api/user`, { withCredentials: true });
-    //     setUser(response.data);
-    //     setLoading(false);
-    //   } catch (error) {
-    //     setError('Error al obtener la información del usuario');
-    //     setLoading(false);
-    //   }
-    // };
-    
     const fetchUser = async () => {
       try {
-        const url = new URL(`${backendUrl}/api/user`)
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        })
-        const data = await response.json();
-        setUser(data);
+        const response = await axios.get(`${backendUrl}/api/user`, { withCredentials: true });
+        setUser(response.data);
         setLoading(false);
       } catch (error) {
         setError('Error al obtener la información del usuario');
         setLoading(false);
       }
     };
+    
+    // const fetchUser = async () => {
+    //   try {
+    //     const url = new URL(`${backendUrl}/api/user`)
+    //     const response = await fetch(url, {
+    //       method: 'GET',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       credentials: 'include',
+    //     })
+    //     const data = await response.json();
+    //     setUser(data);
+    //     setLoading(false);
+    //   } catch (error) {
+    //     setError('Error al obtener la información del usuario');
+    //     setLoading(false);
+    //   }
+    // };
     fetchUser();
   }, [isAuthenticated]);
 

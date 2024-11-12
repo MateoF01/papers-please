@@ -182,7 +182,7 @@ function NavbarContent() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename='/papers-please'>
         <Navbar>
           <NavbarContent />
         </Navbar>
