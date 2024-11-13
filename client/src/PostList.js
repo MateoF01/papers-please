@@ -29,7 +29,8 @@ const PostContainer = styled.div`
 
 const Header = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 15px;
 `;
 
@@ -59,6 +60,14 @@ const SortButton = styled.button`
   &:focus {
     outline: none;
   }
+`;
+
+const SearchInput = styled.input`
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 200px;
+  margin-right: 10px;
 `;
 
 const PostCard = styled.div`
@@ -119,6 +128,11 @@ const AdminName = styled.span`
   font-weight: bold;
 `;
 
+const SortButtonsContainer = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
 function PostList() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -126,6 +140,7 @@ function PostList() {
   const [sortOrder, setSortOrder] = useState('DESC');
   const [orderBy, setOrderBy] = useState('created_at');
   const [selectedTags, setSelectedTags] = useState([]);
+  const [searchTerm, setSearchTerm] = useState(''); // Estado para el texto de búsqueda
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -141,7 +156,6 @@ function PostList() {
         setLoading(false);
       }
     };
-
     fetchPosts();
   }, [orderBy, sortOrder]);
 
@@ -165,10 +179,16 @@ function PostList() {
     setSelectedTags(selectedTags);
   };
 
-  const filteredPosts = posts.filter(post => {
-    if (selectedTags.length === 0) return true;
-    return selectedTags.every(tag => post.tags.includes(parseInt(tag)));
-  });
+  const handleClearTags = () => {
+    setSelectedTags([]);
+  };
+
+  const filteredPosts = posts
+    .filter(post => {
+      if (selectedTags.length === 0) return true;
+      return selectedTags.every(tag => post.tags.includes(parseInt(tag)));
+    })
+    .filter(post => post.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
   const sortedPosts = filteredPosts.filter(post => post.validated === 1);
 
@@ -192,7 +212,6 @@ function PostList() {
       8: 'Economía',
       9: 'Psicología'
     };
-
     return tags.map(tagId => <span key={tagId} className="tag">{tagNames[tagId]}</span>);
   };
 
@@ -201,13 +220,27 @@ function PostList() {
       <RootContainer />
       <PostContainer>
         <Header>
-          <SortButton onClick={() => handleOrderByChange2()}>
+          <SearchInput 
+            type="text" 
+            placeholder="Buscar por título..." 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)} 
+          />
+          {/* <SortButton onClick={() => handleOrderByChange2()}>
             {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
           </SortButton>
           <SortButton onClick={handleSortChange}>
             {sortOrder === 'DESC' ? '▼' : '▲'}
-          </SortButton>
-          <select multiple onChange={handleTagChange} style={{ marginLeft: '10px', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
+          </SortButton> */}
+          <SortButtonsContainer>
+            <SortButton onClick={handleOrderByChange2}>
+              {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
+            </SortButton>
+            <SortButton onClick={handleSortChange}>
+              {sortOrder === 'DESC' ? '▼' : '▲'}
+            </SortButton>
+          </SortButtonsContainer>
+          <select multiple onChange={handleTagChange} style={{ marginLeft: '10px', padding: '10px', borderRadius: '10px', border: '1px solid #ccc', height: '55px', fontSize: '1rem', fontWeight: '600', color: '#666', cursor: 'pointer' }}>
             <option value="0">Matemática</option>
             <option value="1">Ciencia</option>
             <option value="2">Filosofía</option>
@@ -219,6 +252,9 @@ function PostList() {
             <option value="8">Economía</option>
             <option value="9">Psicología</option>
           </select>
+          <SortButton onClick={handleClearTags} >
+           Eliminar Filtros
+          </SortButton>
         </Header>
         
         {loading && <div>Cargando...</div>}
