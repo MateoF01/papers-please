@@ -140,8 +140,9 @@ function SingleForum() {
       })
       .finally(() => {
         setLoading(false);
+        window.location.reload();
       });
-    window.location.reload();
+    
   };
 
   const handleEditForum = () => {
