@@ -13,7 +13,13 @@ function Publication() {
   const [loading, setLoading] = useState(false);
   const [image, setImage] = useState(null);
   const [error, setError] = useState(null);
+  const [tags, setTags] = useState([]);
   const navigate = useNavigate();
+
+  const handleTagChange = (e) => {
+    const selectedTags = Array.from(e.target.selectedOptions, option => option.value);
+    setTags(selectedTags);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -26,6 +32,7 @@ function Publication() {
     if (image) {
       formData.append('image', image); 
     }
+    formData.append('tags', JSON.stringify(tags)); // Add tags to formData
 
     axios.post(`${backendUrl}/api/posts`, formData, {
       withCredentials: true,
@@ -83,7 +90,6 @@ function Publication() {
     fontSize: '16px',
     borderRadius: '4px',
     border: '1px solid #ccc',
-    border: '2px solid #A1DA39',
   };
 
   const ButtonContainerStyle = {
@@ -119,6 +125,18 @@ function Publication() {
             onChange={handleImageChange}
             style={InputStyle}
           />
+          <select multiple onChange={handleTagChange} style={InputStyle}>
+            <option value="0">Matemática</option>
+            <option value="1">Ciencia</option>
+            <option value="2">Filosofía</option>
+            <option value="3">Historia</option>
+            <option value="4">Literatura</option>
+            <option value="5">Tecnología</option>
+            <option value="6">Arte</option>
+            <option value="7">Política</option>
+            <option value="8">Economía</option>
+            <option value="9">Psicología</option>
+          </select>
           <div style={ButtonContainerStyle}>
             <DefaultButton
               type="submit"

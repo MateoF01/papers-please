@@ -48,7 +48,6 @@ const SortButton = styled.button`
   line-height: 26px;
   padding-left: 20px;
   padding-right: 20px;
-  // min-width: 124px;
   height: 55px;
   border-radius: 10px;  
   margin-right: 10px;
@@ -126,12 +125,13 @@ function PostList() {
   const [error, setError] = useState(null);
   const [sortOrder, setSortOrder] = useState('DESC');
   const [orderBy, setOrderBy] = useState('created_at');
+  const [selectedTags, setSelectedTags] = useState([]);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const response = await axios.get(`${backendUrl}/api/posts`, {
-          params: {orderBy, order: sortOrder},
+          params: { orderBy, order: sortOrder },
           withCredentials: true 
         });
         setPosts(response.data);
@@ -160,21 +160,40 @@ function PostList() {
       }})
   }
 
-  const sortedPosts = [...posts]
-    .filter(post => post.validated === 1)
-    // .sort((a, b) => {
-    //   const dateA = new Date(a.created_at);
-    //   const dateB = new Date(b.created_at);
-    //   return sortOrder === 'DESC' ? dateB - dateA : dateA - dateB;
-    // })
-    ;
+  const handleTagChange = (e) => {
+    const selectedTags = Array.from(e.target.selectedOptions, option => option.value);
+    setSelectedTags(selectedTags);
+  };
+
+  const filteredPosts = posts.filter(post => {
+    if (selectedTags.length === 0) return true;
+    return selectedTags.every(tag => post.tags.includes(parseInt(tag)));
+  });
+
+  const sortedPosts = filteredPosts.filter(post => post.validated === 1);
 
   const renderAuthorName = (post) => {
     if (post.user_isAdmin === 1) {
-      //tag de admin
       return <AdminName>{post.user_name} (admin)</AdminName>;
     }
     return post.user_name;
+  };
+
+  const renderTags = (tags) => {
+    const tagNames = {
+      0: 'Matemática',
+      1: 'Ciencia',
+      2: 'Filosofía',
+      3: 'Historia',
+      4: 'Literatura',
+      5: 'Tecnología',
+      6: 'Arte',
+      7: 'Política',
+      8: 'Economía',
+      9: 'Psicología'
+    };
+
+    return tags.map(tagId => <span key={tagId} className="tag">{tagNames[tagId]}</span>);
   };
 
   return (
@@ -188,6 +207,18 @@ function PostList() {
           <SortButton onClick={handleSortChange}>
             {sortOrder === 'DESC' ? '▼' : '▲'}
           </SortButton>
+          <select multiple onChange={handleTagChange} style={{ marginLeft: '10px', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
+            <option value="0">Matemática</option>
+            <option value="1">Ciencia</option>
+            <option value="2">Filosofía</option>
+            <option value="3">Historia</option>
+            <option value="4">Literatura</option>
+            <option value="5">Tecnología</option>
+            <option value="6">Arte</option>
+            <option value="7">Política</option>
+            <option value="8">Economía</option>
+            <option value="9">Psicología</option>
+          </select>
         </Header>
         
         {loading && <div>Cargando...</div>}
@@ -201,6 +232,7 @@ function PostList() {
                   Por {renderAuthorName(post)} • {new Date(post.created_at).toLocaleDateString()}
                 </PostMeta>
                 <p>{post.body.substring(0, 150)}...</p>
+                <div>Tags: {renderTags(post.tags)}</div>
               </PostContent>
               {post.image ? (
                 <PostImage 
