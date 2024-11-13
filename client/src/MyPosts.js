@@ -29,8 +29,18 @@ const PostContainer = styled.div`
 
 const Header = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-bottom: 15px;
+`;
+
+const SearchInput = styled.input`
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-right: 15px;
+  width: 100%;
+  max-width: 300px;
 `;
 
 const SortButton = styled.button`
@@ -48,7 +58,6 @@ const SortButton = styled.button`
   line-height: 26px;
   padding-left: 20px;
   padding-right: 20px;
-  // min-width: 124px;
   height: 55px;
   border-radius: 10px;
   margin-right: 10px;
@@ -100,19 +109,25 @@ const ValidationMessage = styled.div`
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 `;
 
+const SortButtonsContainer = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
 function MyPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortOrder, setSortOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('created_at');
+  const [searchTerm, setSearchTerm] = useState(''); // Agregar estado de búsqueda
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
         const response = await axios.get(`${backendUrl}/api/posts/user/me`, {
-          params: {orderBy, order: sortOrder},
-          withCredentials: true 
+          params: { orderBy, order: sortOrder },
+          withCredentials: true,
         });
         setPosts(response.data);
         setLoading(false);
@@ -126,44 +141,54 @@ function MyPosts() {
   }, [orderBy, sortOrder]);
 
   const handleSortChange = () => {
-    setSortOrder(prevOrder => (prevOrder === 'ASC' ? 'DESC' : 'ASC'));
+    setSortOrder((prevOrder) => (prevOrder === 'ASC' ? 'DESC' : 'ASC'));
   };
 
   const handleOrderByChange2 = () => {
-    setOrderBy(prevOrder => {
-      if (prevOrder === 'created_at'){
-        return 'title'
-      } else if (prevOrder === "title"){
-        return 'user_name'
-      } else{
-        return 'created_at'
-      }})
-  }
+    setOrderBy((prevOrder) => {
+      if (prevOrder === 'created_at') {
+        return 'title';
+      } else if (prevOrder === 'title') {
+        return 'user_name';
+      } else {
+        return 'created_at';
+      }
+    });
+  };
 
-  const sortedPosts = [...posts];
+  // Filtrar posts basado en el término de búsqueda
+  const filteredPosts = posts.filter((post) =>
+    post.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <>
       <RootContainer />
       <PostContainer>
         <Header>
-          <SortButton onClick={() => handleOrderByChange2()}>
-            {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
-          </SortButton>
-          <SortButton onClick={handleSortChange}>
-            {sortOrder === 'DESC' ? '▼' : '▲'}
-          </SortButton>
+          <SearchInput
+            type="text"
+            placeholder="Buscar por título..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)} // Actualizar término de búsqueda
+          />
+          <SortButtonsContainer>
+            <SortButton onClick={handleOrderByChange2}>
+              {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
+            </SortButton>
+            <SortButton onClick={handleSortChange}>
+              {sortOrder === 'DESC' ? '▼' : '▲'}
+            </SortButton>
+          </SortButtonsContainer>
         </Header>
 
         {loading && <div>Cargando...</div>}
         {error && <div>{error}</div>}
-        {!loading && !error && sortedPosts.map(post => (
+        {!loading && !error && filteredPosts.map((post) => (
           <PostLink to={`/post/${post.id}`} key={post.id}>
             <PostCard>
               <PostTitle>{post.title}</PostTitle>
-              <PostMeta>
-                Creado el {new Date(post.created_at).toLocaleDateString()}
-              </PostMeta>
+              <PostMeta>Creado el {new Date(post.created_at).toLocaleDateString()}</PostMeta>
               <p>{post.body.substring(0, 150)}...</p>
               {post.validated === 0 && (
                 <ValidationMessage>Pendiente de validación</ValidationMessage>
