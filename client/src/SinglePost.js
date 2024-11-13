@@ -362,6 +362,24 @@ export default function SinglePost() {
     return post.user_name;
   };
 
+
+  const renderTags = (tags) => {
+    const tagNames = {
+      0: 'Matemática',
+      1: 'Ciencia',
+      2: 'Filosofía',
+      3: 'Historia',
+      4: 'Literatura',
+      5: 'Tecnología',
+      6: 'Arte',
+      7: 'Política',
+      8: 'Economía',
+      9: 'Psicología'
+    };
+
+    return tags.map(tagId => <span key={tagId} className="tag">{tagNames[tagId]}</span>);
+  };
+
   return (
     <>
       <RootContainer />
@@ -392,8 +410,10 @@ export default function SinglePost() {
             <>
               <PostTitle>{post.title}</PostTitle>
               <PostMeta>
-                Por {renderAuthorName()} • {new Date(post.created_at).toLocaleDateString()}
+                Por {renderAuthorName()} • {new Date(post.created_at).toLocaleDateString()} • {renderTags(post.tags)}
+
               </PostMeta>
+
               {post.image && <PostImage src={`${backendUrl}${post.image}`} alt="Imagen de la publicación" />}
               <PostBody>{post.body}</PostBody>
               <div style={{ marginTop: '20px' }}>

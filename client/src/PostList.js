@@ -229,7 +229,7 @@ function PostList() {
               <PostContent>
                 <PostTitle>{post.title}</PostTitle>
                 <PostMeta>
-                  Por {renderAuthorName(post)} • {new Date(post.created_at).toLocaleDateString()}
+                  Por {renderAuthorName(post)} • {new Date(post.created_at).toLocaleDateString()}                
                 </PostMeta>
                 <p>{post.body.substring(0, 150)}...</p>
                 <div>Tags: {renderTags(post.tags)}</div>
