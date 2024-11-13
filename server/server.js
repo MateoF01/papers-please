@@ -528,52 +528,6 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
     });
 });
 
-
-// app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, res) => {
-//     const { title, body , tags} = req.body;
-//     const newImagePath = req.file ? `/uploads/${req.file.filename}` : null;
-
-//     // Valido que el posteo pertenezca al usuario loggeado
-//     db.get('SELECT * FROM posts WHERE id = ?', [req.params.id], (err, row) => {
-//         if (err) {
-//             return res.status(500).json({ error: err.message });
-//         }
-//         if (!row) {
-//             return res.status(404).json({ error: 'Post not found' });
-//         }
-//         if (row.user_id !== req.session.usuarioId) {
-//             return res.status(403).json({ error: 'Not authorized to update this post' });
-//         }
-
-//         let tagsValue = 0;
-//             if(Array.isArray(tags) && tags.length > 0){
-//                 tags.forEach(tagId => {
-//                     if (TAGS[tagId] !== undefined) {
-//                         tagsValue |= TAGS[tagId];  // Sumar el valor de la etiqueta usando OR bitwise
-//                     }
-//                 });
-//             }
-        
-//         // Actualizar la publicación en la base de datos
-//         const sql = `UPDATE posts SET title = ?, body = ?, tags = ?, image = COALESCE(?, image) WHERE id = ?`;
-//         db.run(sql, [title, body, tagsValue, newImagePath, req.params.id], function(err) {
-//             if (err) {
-//                 return res.status(500).json({ error: err.message });
-//             }
-
-//             // Eliminar la imagen anterior si se ha cargado una nueva
-//             if (newImagePath && row.image) {
-//                 const oldImagePath = `./uploads/${path.basename(row.image)}`;
-//                 fs.unlink(oldImagePath, (unlinkErr) => {
-//                     if (unlinkErr) console.error('Error deleting old image:', unlinkErr);
-//                 });
-//             }
-
-//             res.json({ message: 'Post updated successfully' });
-//         });
-//     });
-// });
-
 // Borro un posteo
 app.delete('/api/posts/:id', verificarAutenticacion, (req, res) => {
     const postId = req.params.id;
@@ -591,13 +545,28 @@ app.delete('/api/posts/:id', verificarAutenticacion, (req, res) => {
             return res.status(403).json({ error: 'Not authorized to delete this post' });
         }
         
-        const sql = `DELETE FROM posts WHERE id = ?`;
-        db.run(sql, [postId], function(err) {
+        const deleteCommentsSql = `DELETE FROM reviews WHERE post_id = ?`;
+        db.run(deleteCommentsSql, [postId], function(err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
-            res.json({ message: 'Post deleted successfully' });
+
+            // y el post.
+            const deletePostSql = `DELETE FROM posts WHERE id = ?`;
+            db.run(deletePostSql, [postId], function(err) {
+                if (err) {
+                    return res.status(500).json({ error: err.message });
+                }
+                res.json({ message: 'Post and associated reviews deleted successfully' });
+            });
         });
+        // const sql = `DELETE FROM posts WHERE id = ?`;
+        // db.run(sql, [postId], function(err) {
+        //     if (err) {
+        //         return res.status(500).json({ error: err.message });
+        //     }
+        //     res.json({ message: 'Post deleted successfully' });
+        // });
     });
 });
 
@@ -876,12 +845,20 @@ app.delete('/api/forums/:id', verificarAutenticacion, (req, res) => {
             return res.status(403).json({ error: 'Not authorized to delete this forum' });
         }
         
-        const sql = `DELETE FROM forums WHERE id = ?`;
-        db.run(sql, [forumId], function(err) {
+        const deleteCommentsSql = `DELETE FROM comments WHERE forum_id = ?`;
+        db.run(deleteCommentsSql, [forumId], function(err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
-            res.json({ message: 'Forum deleted successfully' });
+
+            // ahora borro el foro
+            const deleteForumSql = `DELETE FROM forums WHERE id = ?`;
+            db.run(deleteForumSql, [forumId], function(err) {
+                if (err) {
+                    return res.status(500).json({ error: err.message });
+                }
+                res.json({ message: 'Forum and associated comments deleted successfully' });
+            });
         });
     });
 });
@@ -980,7 +957,7 @@ app.put('/api/forums/:id/comments/:id', verificarAutenticacion, (req, res) => {
 
 // Borro un comentario
 app.delete('/api/forums/:id/comments/:id', verificarAutenticacion, (req, res) => {
-const commentId = req.params.id;
+    const commentId = req.params.id;
     const userId = req.session.usuarioId;
     const isAdmin = req.body.isAdmin === 1;
 

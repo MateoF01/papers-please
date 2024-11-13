@@ -32,7 +32,6 @@ function NewForum() {
       .then((response) => {
         console.log('Forum created successfully:', response.data);
         setLoading(false);
-        alert('Tu foro será validado por un moderador pronto.');
         navigate('/forums');  // Redirige a la lista de foros
       })
       .catch((error) => {
