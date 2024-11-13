@@ -178,7 +178,10 @@ function SingleForum() {
   };
 
   const handleDeleteComment = (commentId) => {
-    axios.delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { withCredentials: true })
+    axios.delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, {
+      withCredentials: true,
+      data: { isAdmin: currentUser.isAdmin }
+      })
       .then(() => {
         setComments(comments.filter(comment => comment.id !== commentId));
       })
