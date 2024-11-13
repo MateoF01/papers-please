@@ -156,7 +156,6 @@ function PostList() {
         setLoading(false);
       }
     };
-
     fetchPosts();
   }, [orderBy, sortOrder]);
 
@@ -178,6 +177,10 @@ function PostList() {
   const handleTagChange = (e) => {
     const selectedTags = Array.from(e.target.selectedOptions, option => option.value);
     setSelectedTags(selectedTags);
+  };
+
+  const handleClearTags = () => {
+    setSelectedTags([]);
   };
 
   const filteredPosts = posts
@@ -209,7 +212,6 @@ function PostList() {
       8: 'Economía',
       9: 'Psicología'
     };
-
     return tags.map(tagId => <span key={tagId} className="tag">{tagNames[tagId]}</span>);
   };
 
@@ -238,7 +240,7 @@ function PostList() {
               {sortOrder === 'DESC' ? '▼' : '▲'}
             </SortButton>
           </SortButtonsContainer>
-          <select multiple onChange={handleTagChange} style={{ marginLeft: '10px', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}>
+          <select multiple onChange={handleTagChange} style={{ marginLeft: '10px', padding: '10px', borderRadius: '10px', border: '1px solid #ccc', height: '55px', fontSize: '1rem', fontWeight: '600', color: '#666', cursor: 'pointer' }}>
             <option value="0">Matemática</option>
             <option value="1">Ciencia</option>
             <option value="2">Filosofía</option>
@@ -250,6 +252,9 @@ function PostList() {
             <option value="8">Economía</option>
             <option value="9">Psicología</option>
           </select>
+          <SortButton onClick={handleClearTags} >
+           Eliminar Filtros
+          </SortButton>
         </Header>
         
         {loading && <div>Cargando...</div>}
