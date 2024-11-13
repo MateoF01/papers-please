@@ -57,7 +57,13 @@ const PostImage = styled.img`
   border-radius: 8px;
   margin-bottom: 20px;
 `;
-
+const InputStyle = {
+  marginBottom: '20px',
+  padding: '10px',
+  fontSize: '16px',
+  borderRadius: '4px',
+  border: '1px solid #ccc',
+};
 const Button = styled.button`
   padding: 8px 16px;
   margin-right: 10px;
@@ -142,6 +148,7 @@ export default function SinglePost() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedBody, setEditedBody] = useState('');
+  const [tags, setTags] = useState([]);
   const [editedImage, setEditedImage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [errorDetails, setErrorDetails] = useState(null);
@@ -154,6 +161,11 @@ export default function SinglePost() {
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [editedRating, setEditedRating] = useState(0);
   const [editedComment, setEditedComment] = useState('');
+
+  const handleTagChange = (e) => {
+    const selectedTags = Array.from(e.target.selectedOptions, option => option.value);    
+    setTags(selectedTags);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -195,16 +207,17 @@ export default function SinglePost() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-  
-    const formData = new FormData();
-    formData.append('title', editedTitle);
-    formData.append('body', editedBody);
-    if (editedImage) {
-      formData.append('image', editedImage);
-    }
-  
+
     try {
-      await axios.put(`${backendUrl}/api/posts/${id}`, formData, {
+
+
+      await axios.put(`${backendUrl}/api/posts/${id}`, 
+      {
+        title: editedTitle,
+        body: editedBody,
+        image: editedImage ? editedImage : '',
+        tags: tags
+      }, {
         withCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -212,6 +225,7 @@ export default function SinglePost() {
       });
       
       const response = await axios.get(`${backendUrl}/api/posts/${id}`, { withCredentials: true });
+            
       setPost(response.data);
       setIsEditing(false);
     } catch (err) {
@@ -376,7 +390,6 @@ export default function SinglePost() {
       8: 'Economía',
       9: 'Psicología'
     };
-
     return tags.map(tagId => <span key={tagId} className="tag">{tagNames[tagId]}</span>);
   };
 
@@ -396,11 +409,26 @@ export default function SinglePost() {
                 value={editedBody}
                 onChange={(e) => setEditedBody(e.target.value)}
               />
+
+
               <Input
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
               />
+
+              <select multiple onChange={handleTagChange} style={InputStyle}>
+                  <option value="0">Matemática</option>
+                  <option value="1">Ciencia</option>
+                  <option value="2">Filosofía</option>
+                  <option value="3">Historia</option>
+                  <option value="4">Literatura</option>
+                  <option value="5">Tecnología</option>
+                  <option value="6">Arte</option>
+                  <option value="7">Política</option>
+                  <option value="8">Economía</option>
+                  <option value="9">Psicología</option>
+                </select>
               <div>
                 <Button type="submit" className="edit">Guardar</Button>
                 <Button type="button" onClick={() => setIsEditing(false)}>Cancelar</Button>

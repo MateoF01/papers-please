@@ -483,7 +483,8 @@ app.get('/api/posts/user/me', verificarAutenticacion, (req, res) => {
 // Actualizo un posteo
 
 app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, res) => {
-    const { title, body, tags } = req.body;
+    let { title, body, tags } = req.body;
+
     const newImagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
     // Valido que el posteo pertenezca al usuario loggeado
@@ -507,6 +508,7 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
                 }
             });
         }
+
 
         // Actualizar la publicación en la base de datos
         const sql = `UPDATE posts SET title = ?, body = ?, tags = ?, image = COALESCE(?, image) WHERE id = ?`;
