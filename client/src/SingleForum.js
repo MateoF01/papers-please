@@ -5,77 +5,68 @@ import DefaultButton from './components/button/DefaultButton';
 import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import styled from 'styled-components';
 import BackgroundImage from './background.png';
-import { Star, Edit, Trash } from 'lucide-react';
+import { Edit, Trash } from 'lucide-react';
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
-const RootContainer = styled.div`
+const PageContainer = styled.div`
   background-image: url(${BackgroundImage});
   background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
   min-height: 100vh;
-  width: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  padding: 20px;
 `;
 
 const ForumContainer = styled.div`
+  border: 2px solid #A1DA39;
   background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
   padding: 30px;
+  border-radius: 10px;
   max-width: 600px;
   width: 100%;
-  border: 2px solid #A1DA39;
 `;
 
-const ForumTitle = styled.h1`
-  margin-bottom: 20px;
-  color: #333;
-`;
-
-const ForumBody = styled.p`
-  color: #666;
-  line-height: 1.6;
-`;
-
-const ButtonGroup = styled.div`
-  margin-top: 20px;
-`;
-
-const CommentSection = styled.div`
-  margin-top: 30px;
-`;
-
-const CommentItem = styled.div`
-  border-bottom: 1px solid #ddd;
-  padding: 10px 0;
-`;
-
-const CommentText = styled.p`
-  margin: 5px 0;
-`;
-
-const AddCommentForm = styled.form`
-  margin-top: 20px;
+const Input = styled.input`
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 `;
 
 const Textarea = styled.textarea`
   width: 100%;
   padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ddd;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
   resize: vertical;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+`;
+
+const CommentSection = styled.div`
+  margin-top: 20px;
+`;
+
+const CommentItem = styled.div`
+  border-bottom: 1px solid #ccc;
+  padding: 10px 0;
   margin-bottom: 10px;
 `;
 
-const CommentButtonGroup = styled.div`
-  display: flex;
-  gap: 10px;
-`;
-
 const DefaultButtonStyled = styled(DefaultButton)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  
   &.edit {
     background-color: #4CAF50;
     color: white;
@@ -92,12 +83,8 @@ const DefaultButtonStyled = styled(DefaultButton)`
   }
 `;
 
-const StarRating = styled.div`
-  display: flex;
-  gap: 5px;
-`;
 
-const SingleForum = () => {
+function SingleForum() {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -110,23 +97,28 @@ const SingleForum = () => {
   const [forumBody, setForumBody] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [editedCommentText, setEditedCommentText] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
-        const [forumResponse, commentsResponse] = await Promise.all([
-          axios.get(`${backendUrl}/api/forums/${id}`),
-          axios.get(`${backendUrl}/api/forums/${id}/comments`),
+        const [forumResponse, commentsResponse, userResponse] = await Promise.all([
+          axios.get(`${backendUrl}/api/forums/${id}`, { withCredentials: true }),
+          axios.get(`${backendUrl}/api/forums/${id}/comments`, { withCredentials: true }),
+          axios.get(`${backendUrl}/api/user`, { withCredentials: true })
         ]);
 
         setForum(forumResponse.data);
         setForumTitle(forumResponse.data.title);
         setForumBody(forumResponse.data.body);
         setComments(commentsResponse.data);
+        setCurrentUser(userResponse.data);
+
       } catch (error) {
-        setError('Error al cargar el foro o los comentarios.');
+        setError('Error al cargar los datos.');
       } finally {
         setLoading(false);
       }
@@ -138,84 +130,75 @@ const SingleForum = () => {
   const handleAddComment = (e) => {
     e.preventDefault();
     setLoading(true);
-    axios
-      .post(
-        `${backendUrl}/api/forums/${id}/comments`,
-        { comment: newComment },
-        { withCredentials: true }
-      )
-      .then((response) => {
+    axios.post(`${backendUrl}/api/forums/${id}/comments`, { comment: newComment }, { withCredentials: true })
+      .then(response => {
         setComments([...comments, response.data]);
         setNewComment('');
       })
-      .catch(() => {
+      .catch(error => {
         setError('Error al agregar el comentario.');
       })
       .finally(() => {
         setLoading(false);
       });
+    window.location.reload();
   };
 
   const handleEditForum = () => {
-    axios
-      .put(
-        `${backendUrl}/api/forums/${id}`,
-        { title: forumTitle, body: forumBody },
-        { withCredentials: true }
-      )
+    axios.put(`${backendUrl}/api/forums/${id}`, { title: forumTitle, body: forumBody }, { withCredentials: true })
       .then(() => {
         setEditingForum(false);
-        setForum((prev) => ({ ...prev, title: forumTitle, body: forumBody }));
+        setForum(prev => ({ ...prev, title: forumTitle, body: forumBody }));
       })
-      .catch(() => {
+      .catch(error => {
         setError('Error al actualizar el foro.');
       });
   };
 
   const handleDeleteForum = () => {
-    axios
-      .delete(`${backendUrl}/api/forums/${id}`, { withCredentials: true })
+    axios.delete(`${backendUrl}/api/forums/${id}`, { withCredentials: true })
       .then(() => {
         navigate('/forums');
       })
-      .catch(() => {
+      .catch(error => {
         setError('Error al eliminar el foro.');
       });
   };
 
   const handleEditComment = (commentId, updatedComment) => {
-    axios
-      .put(
-        `${backendUrl}/api/forums/${id}/comments/${commentId}`,
-        { body: updatedComment },
-        { withCredentials: true }
-      )
+    axios.put(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { body: updatedComment }, { withCredentials: true })
       .then(() => {
-        setComments(
-          comments.map((comment) =>
-            comment.id === commentId ? { ...comment, body: updatedComment } : comment
-          )
-        );
+        setComments(comments.map(comment => comment.id === commentId ? { ...comment, body: updatedComment } : comment));
         setEditingCommentId(null);
       })
-      .catch(() => {
+      .catch(error => {
         setError('Error al actualizar el comentario.');
       });
   };
 
   const handleDeleteComment = (commentId) => {
-    axios
-      .delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { withCredentials: true })
+    axios.delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { withCredentials: true })
       .then(() => {
-        setComments(comments.filter((comment) => comment.id !== commentId));
+        setComments(comments.filter(comment => comment.id !== commentId));
       })
-      .catch(() => {
+      .catch(error => {
         setError('Error al eliminar el comentario.');
       });
   };
 
+  const handleEditCommentChange = (e) => {
+    setEditedCommentText(e.target.value);
+  };
+
+  const handleSaveEditedComment = (commentId) => {
+    handleEditComment(commentId, editedCommentText);
+  };
+
+  const isAdmin = currentUser && currentUser.isAdmin === 1;
+  const isForumOwner = currentUser && currentUser.id === forum?.user_id;
+
   return (
-    <RootContainer>
+    <PageContainer>
       <ForumContainer>
         {loading ? (
           <TailSpin stroke="#000000" />
@@ -225,76 +208,88 @@ const SingleForum = () => {
           <>
             {editingForum ? (
               <>
-                <input
+                <Input
                   type="text"
                   value={forumTitle}
                   onChange={(e) => setForumTitle(e.target.value)}
-                  style={{ marginBottom: '10px', padding: '5px' }}
                 />
                 <Textarea
                   value={forumBody}
                   onChange={(e) => setForumBody(e.target.value)}
-                  style={{ marginBottom: '10px', padding: '5px' }}
+                  rows={5}
                 />
-                <DefaultButtonStyled content="Guardar" className="edit" handleClick={handleEditForum} />
-                <DefaultButtonStyled content="Cancelar" handleClick={() => setEditingForum(false)} />
+                <ButtonGroup>
+                  <DefaultButtonStyled content="Guardar" handleClick={handleEditForum} />
+                  <DefaultButtonStyled content="Cancelar" handleClick={() => setEditingForum(false)} />
+                </ButtonGroup>
               </>
             ) : (
               <>
-                <ForumTitle>{forum.title}</ForumTitle>
-                <ForumBody>{forum.body}</ForumBody>
+                <h1>{forum.title}</h1>
+                <p>{forum.body}</p>
                 <ButtonGroup>
-                  <DefaultButtonStyled content="Editar Foro" className="edit" handleClick={() => setEditingForum(true)} />
-                  <DefaultButtonStyled content="Eliminar Foro" className="delete" handleClick={handleDeleteForum} />
+                  {isForumOwner && (
+                    <DefaultButtonStyled content={<Edit size={18} />} handleClick={() => setEditingForum(true)} />
+                  )}
+                  {(isAdmin || isForumOwner) && (
+                    <DefaultButtonStyled content={<Trash size={18} />} handleClick={handleDeleteForum} />
+                  )}
                 </ButtonGroup>
               </>
             )}
 
             <CommentSection>
               <h3>Comentarios:</h3>
-              {comments.map((comment) => (
+              {comments.map(comment => (
                 <CommentItem key={comment.id}>
                   {editingCommentId === comment.id ? (
                     <>
                       <Textarea
-                        value={comment.body}
-                        onChange={(e) => handleEditComment(comment.id, e.target.value)}
-                        style={{ marginBottom: '10px', padding: '5px' }}
+                        value={editedCommentText}
+                        onChange={handleEditCommentChange}
+                        rows={3}
                       />
-                      <CommentButtonGroup>
-                        <DefaultButtonStyled content="Guardar" className="edit" handleClick={() => handleEditComment(comment.id, comment.body)} />
+                      <ButtonGroup>
+                        <DefaultButtonStyled content="Guardar" handleClick={() => handleSaveEditedComment(comment.id)} />
                         <DefaultButtonStyled content="Cancelar" handleClick={() => setEditingCommentId(null)} />
-                      </CommentButtonGroup>
+                      </ButtonGroup>
                     </>
                   ) : (
                     <>
-                      <CommentText>
-                        <strong>{comment.user_name}:</strong> {comment.body}
-                      </CommentText>
-                      <CommentButtonGroup>
-                        <DefaultButtonStyled content="Editar" className="edit" handleClick={() => setEditingCommentId(comment.id)} />
-                        <DefaultButtonStyled content="Eliminar" className="delete" handleClick={() => handleDeleteComment(comment.id)} />
-                      </CommentButtonGroup>
+                      <p><strong>{comment.user_name}:</strong> {comment.body}</p>
+                      <ButtonGroup>
+                        {currentUser.id === comment.user_id && (
+                          <DefaultButtonStyled content={<Edit size={18} />} handleClick={() => {
+                            setEditingCommentId(comment.id);
+                            setEditedCommentText(comment.body);
+                          }} />
+                        )}
+                        {(currentUser.id === comment.user_id || isAdmin) && (
+                          <DefaultButtonStyled content={<Trash size={18} />} handleClick={() => handleDeleteComment(comment.id)} />
+                        )}
+                      </ButtonGroup>
                     </>
                   )}
                 </CommentItem>
               ))}
             </CommentSection>
 
-            <AddCommentForm onSubmit={handleAddComment}>
+            <h3>Agregar comentario</h3>
+            <form onSubmit={handleAddComment}>
               <Textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Escribe tu comentario..."
+                placeholder="Escribe tu comentario"
                 required
+                rows={4}
               />
-              <DefaultButtonStyled content="Agregar Comentario" className="add" type="submit" />
-            </AddCommentForm>
+              <DefaultButtonStyled content="Agregar Comentario" type="submit" />
+            </form>
           </>
         )}
       </ForumContainer>
-    </RootContainer>
+    </PageContainer>
   );
-};
+}
 
 export default SingleForum;
