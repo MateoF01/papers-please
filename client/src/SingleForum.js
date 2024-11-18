@@ -6,6 +6,8 @@ import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import styled from 'styled-components';
 import BackgroundImage from './background.png';
 import { Edit, Trash } from 'lucide-react';
+import Swal from 'sweetalert2';
+
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
@@ -156,14 +158,28 @@ function SingleForum() {
       });
   };
 
-  const handleDeleteForum = () => {
-    axios.delete(`${backendUrl}/api/forums/${id}`, { withCredentials: true })
-      .then(() => {
+  const handleDeleteForum = async () => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará el foro de forma permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/forums/${id}`, { withCredentials: true });
+        Swal.fire('Eliminado', 'El foro ha sido eliminado.', 'success');
         navigate('/forums');
-      })
-      .catch(error => {
-        setError('Error al eliminar el foro.');
-      });
+      } catch (error) {
+        console.error('Error details:', error.response ? error.response.data : error.message);
+        Swal.fire('Error', 'Error al eliminar el foro.', 'error');
+      }
+    }
   };
 
   const handleEditComment = (commentId, updatedComment) => {
@@ -177,17 +193,31 @@ function SingleForum() {
       });
   };
 
-  const handleDeleteComment = (commentId) => {
-    axios.delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, {
-      withCredentials: true,
-      data: { isAdmin: currentUser.isAdmin }
-      })
-      .then(() => {
+  const handleDeleteComment = async (commentId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará el comentario de forma permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/forums/${id}/comments/${commentId}`, {
+          withCredentials: true,
+          data: { isAdmin: currentUser.isAdmin }
+        });
         setComments(comments.filter(comment => comment.id !== commentId));
-      })
-      .catch(error => {
-        setError('Error al eliminar el comentario.');
-      });
+        Swal.fire('Eliminado', 'El comentario ha sido eliminado.', 'success');
+      } catch (error) {
+        console.error('Error details:', error.response ? error.response.data : error.message);
+        Swal.fire('Error', 'Error al eliminar el comentario.', 'error');
+      }
+    }
   };
 
   const handleEditCommentChange = (e) => {

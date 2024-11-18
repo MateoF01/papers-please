@@ -4,6 +4,8 @@ import axios from 'axios';
 import styled from 'styled-components';
 import backgroundImage from './background.png';
 import { Star, Edit, Trash } from 'lucide-react';
+import Swal from 'sweetalert2';
+
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
@@ -234,17 +236,28 @@ export default function SinglePost() {
   };
 
   const handleDelete = async () => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará la publicación de forma permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
       try {
         await axios.delete(`${backendUrl}/api/posts/${id}`, {
           withCredentials: true,
           data: { isAdmin: currentUser.isAdmin }
         });
+        Swal.fire('Eliminado', 'La publicación ha sido eliminada.', 'success');
         navigate(-1);
       } catch (err) {
         console.error('Error details:', err.response ? err.response.data : err.message);
-        setError('Error al eliminar la publicación');
-        setErrorDetails(err.response ? err.response.data : err.message);
+        Swal.fire('Error', 'Error al eliminar la publicación.', 'error');
       }
     }
   };
