@@ -325,15 +325,27 @@ export default function SinglePost() {
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (window.confirm('Are you sure you want to delete this review?')) {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Esta acción eliminará la reseña de forma permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel'
+    });
+  
+    if (result.isConfirmed) {
       try {
         await axios.delete(`${backendUrl}/api/reviews/${reviewId}`, {
           withCredentials: true
         });
-        window.location.reload()
-        setReviews(reviews.filter(review => review.id !== reviewId));
+        Swal.fire('Eliminado', 'La reseña ha sido eliminada.', 'success');
+        setReviews(reviews.filter((review) => review.id !== reviewId));
       } catch (err) {
         console.error('Error deleting review:', err);
+        Swal.fire('Error', 'Error al eliminar la reseña.', 'error');
       }
     }
   };
