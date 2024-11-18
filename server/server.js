@@ -511,7 +511,7 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
 
 
         // Actualizar la publicación en la base de datos
-        const sql = `UPDATE posts SET title = ?, body = ?, tags = ?, image = COALESCE(?, image) WHERE id = ?`;
+        const sql = `UPDATE posts SET title = ?, body = ?, tags = ?, validated = 0, image = COALESCE(?, image) WHERE id = ?`;
         db.run(sql, [title, body, tagsValue, newImagePath, req.params.id], function(err) {
             if (err) {
                 return res.status(500).json({ error: err.message });
