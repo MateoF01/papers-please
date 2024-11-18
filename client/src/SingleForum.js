@@ -260,7 +260,8 @@ function SingleForum() {
                     </>
                   ) : (
                     <>
-                      <p><strong>{comment.user_name}:</strong> {comment.body}</p>
+                      <p><strong>{comment.user_name}:</strong> {comment.body}</p> 
+                      <p style={{ fontSize: '0.8em', color: 'gray' }}>{comment.created_at}</p>
                       <ButtonGroup>
                         {currentUser.id === comment.user_id && (
                           <DefaultButtonStyled content={<Edit size={18} />} handleClick={() => {
