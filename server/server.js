@@ -25,7 +25,7 @@ const TAGS = {
 
 app.use(bodyParser.json());
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-corp.github.io' : 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please.netlify.app' : 'http://localhost:3000',
     credentials: true
 }));
 
@@ -37,7 +37,7 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
-        domain: process.env.NODE_ENV === 'production' ? '.papers-please-corp.github.io' : null,
+        domain: process.env.NODE_ENV === 'production' ? '.papers-please.netlify.app' : null,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : false,
         path: '/'
