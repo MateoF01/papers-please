@@ -43,8 +43,8 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
-        // domain: process.env.NODE_ENV === 'production' ? '.papers-please.netlify.app' : null,
-        domain: process.env.NODE_ENV === 'production' ? '.papers-please-corp.github.io' : null,
+        domain: process.env.NODE_ENV === 'production' ? '.papers-please.netlify.app' : null,
+        //domain: process.env.NODE_ENV === 'production' ? '.papers-please-corp.github.io' : null,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : false,
         path: '/'
