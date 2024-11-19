@@ -6,6 +6,11 @@ const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const cors = require('cors');
 const { check, validationResult } = require('express-validator');
+const OpenAI = require('openai');
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
 
 const app = express();
 const db = new sqlite3.Database('./database.db');
@@ -25,7 +30,8 @@ const TAGS = {
 
 app.use(bodyParser.json());
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please.netlify.app' : 'http://localhost:3000',
+    //origin: process.env.NODE_ENV === 'production' ? 'https://papers-please.netlify.app' : 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-corp.github.io' : 'http://localhost:3000',
     credentials: true
 }));
 
@@ -37,7 +43,8 @@ app.use(session({
     saveUninitialized: true,
     cookie: {
         httpOnly: true,
-        domain: process.env.NODE_ENV === 'production' ? '.papers-please.netlify.app' : null,
+        // domain: process.env.NODE_ENV === 'production' ? '.papers-please.netlify.app' : null,
+        domain: process.env.NODE_ENV === 'production' ? '.papers-please-corp.github.io' : null,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : false,
         path: '/'
@@ -61,6 +68,29 @@ const upload = multer({ storage });
 
 
 //--------------- ENDPOINTS (ORDENAR) ----------------------
+
+
+// Chat con IA de openai
+app.post('/api/chat', async (req, res) => {
+    try {
+      const { messages, context } = req.body;
+  
+      // Contexto de sistema
+      const systemMessage = { role: "system", content: context || "Sos un asistente virtual de una plataforma de papers academicos, hablas solo en español rioplatense usando voseo verbal" };
+      const fullMessages = [systemMessage, ...messages];
+  
+      const completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: fullMessages,
+      });
+  
+      res.json({ reply: completion.choices[0].message.content });
+    } catch (error) {
+      console.error('Error in chat API:', error);
+      res.status(500).json({ error: 'An error occurred while processing your request.' });
+    }
+  });
+
 
 app.post('/api/register', (req, res) => {
     const { userName, email, password } = req.body;

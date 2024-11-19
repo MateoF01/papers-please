@@ -17,6 +17,7 @@ import PostListToValidate from './PostListToValidate';
 import AdminRoute from './components/routes/AdminRoute';
 import AuthenticatedRoute from './components/routes/AuthenticatedRoute';
 import Profile from './Profile';
+import Bot from './Bot';
 import { AuthContext, AuthProvider } from './assets/AuthContext';
 
 const Navbar = styled.nav`
@@ -159,6 +160,7 @@ function NavbarContent() {
             <NavbarButton onClick={() => navigate('/posts')}>Ver Publicaciones</NavbarButton>
             <NavbarButton onClick={() => navigate('/my-posts')}>Ver Mis Publicaciones</NavbarButton>
             <NavbarButton onClick={() => navigate('/new-forum')}>Crear Foro</NavbarButton>
+            <NavbarButton onClick={() => navigate('/bot')}>Asistente</NavbarButton>
 
             <NavbarButton onClick={() => navigate('/forums')}>Foros</NavbarButton>
             {isAdmin === 1 && (
@@ -206,7 +208,7 @@ function App() {
 
           {/* Ruta protegida para admin */}
           <Route path="/posts-to-validate" element={<AdminRoute element={PostListToValidate} />} />
-          
+          <Route path="/bot" element={<AuthenticatedRoute element={Bot} />} />
           <Route path="/" element={<Root />} />
         </Routes>
       </Router>
