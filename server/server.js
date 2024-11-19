@@ -30,8 +30,8 @@ const TAGS = {
 
 app.use(bodyParser.json());
 app.use(cors({
-    //origin: process.env.NODE_ENV === 'production' ? 'https://papers-please.netlify.app' : 'http://localhost:3000',
-    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-corp.github.io' : 'http://localhost:3000',
+    origin: process.env.NODE_ENV === 'production' ? 'https://papers-please.netlify.app' : 'http://localhost:3000',
+    //origin: process.env.NODE_ENV === 'production' ? 'https://papers-please-corp.github.io' : 'http://localhost:3000',
     credentials: true
 }));
 
