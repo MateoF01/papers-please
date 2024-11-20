@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
-import backgroundImage from './background.png';
 import Swal from 'sweetalert2';
+import backgroundImage from './background.png';
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
@@ -168,12 +168,28 @@ export default function PostListToValidate() {
 
   const handleAddTag = async (e) => {
     e.preventDefault();
-    try {
-      const response = await axios.post(`${backendUrl}/api/tags`, { tagName: newTag });
-      setTags([...tags, response.data.tag]);
-      setNewTag('');
-    } catch (error) {
-      console.error('Error adding tag:', error);
+
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción añadirá una nueva etiqueta.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, añadir',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response = await axios.post(`${backendUrl}/api/tags`, { tagName: newTag });
+        setTags([...tags, response.data.tag]);
+        setNewTag('');
+        Swal.fire('Añadido', 'La etiqueta ha sido añadida.', 'success');
+      } catch (error) {
+        console.error('Error adding tag:', error);
+        Swal.fire('Error', 'Error al añadir la etiqueta.', 'error');
+      }
     }
   };
 
@@ -208,30 +224,15 @@ export default function PostListToValidate() {
       setError('User information not available');
       return;
     }
-
-    const result = await Swal.fire({
-      title: '¿Estás seguro?',
-      text: 'Esta acción eliminará la publicación de forma permanente.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await axios.delete(`${backendUrl}/api/posts/${postId}`, {
-          withCredentials: true,
-          data: { isAdmin: currentUser.isAdmin }
-        });
-        setPosts(posts.filter(post => post.id !== postId));
-        Swal.fire('Eliminado', 'La publicación ha sido eliminada.', 'success');
-      } catch (err) {
-        console.error("Error deleting the post", err);
-        Swal.fire('Error', 'Error al eliminar la publicación.', 'error');
-      }
+    try {
+      await axios.delete(`${backendUrl}/api/posts/${postId}`, {
+        withCredentials: true,
+        data: { isAdmin: currentUser.isAdmin }
+      });
+      setPosts(posts.filter(post => post.id !== postId));
+    } catch (err) {
+      console.error("Error deleting the post", err);
+      setError('Error deleting the post: ' + (err.response?.data?.error || err.message));
     }
   };
 
@@ -278,7 +279,7 @@ export default function PostListToValidate() {
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Nuevo tag"
+                placeholder="Nuevo Tag"
               />
               <Button type="submit">Agregar</Button>
             </form>

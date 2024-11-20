@@ -89,17 +89,63 @@ const SortButton = styled.button`
   }
 `;
 
-const TagSelect = styled.select`
-  padding: 8px;
-  border-radius: 10px;
+const TagDropdown = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
+const TagDropdownButton = styled.button`
+  background: white;
   border: 1px solid #ccc;
-  height: 38px;
-  font-size: 0.9rem;
-  font-weight: 600;
   color: #666;
+  font-size: 0.9rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  transition: color 0.3s ease;
+  font-weight: 600;
+  padding: 8px 16px;
+  height: 38px;
+  border-radius: 10px;
+  white-space: nowrap;
   min-width: 120px;
-  box-sizing: border-box;
+  
+  &:hover {
+    color: #333;
+  }
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+const TagDropdownContent = styled.div`
+  display: ${props => props.isOpen ? 'block' : 'none'};
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  max-height: 200px;
+  overflow-y: auto;
+`;
+
+const TagOption = styled.label`
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #f1f1f1;
+  }
+
+  input {
+    margin-right: 8px;
+  }
 `;
 
 const PostCard = styled.div`
@@ -184,6 +230,7 @@ export default function PostList() {
   const [selectedTags, setSelectedTags] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [tags, setTags] = useState([]);
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -226,9 +273,14 @@ export default function PostList() {
     });
   };
 
-  const handleTagChange = (e) => {
-    const selectedTags = Array.from(e.target.selectedOptions, option => option.value);
-    setSelectedTags(selectedTags);
+  const handleTagChange = (tagId) => {
+    setSelectedTags(prevSelectedTags => {
+      if (prevSelectedTags.includes(tagId)) {
+        return prevSelectedTags.filter(id => id !== tagId);
+      } else {
+        return [...prevSelectedTags, tagId];
+      }
+    });
   };
 
   const handleClearTags = () => {
@@ -239,7 +291,7 @@ export default function PostList() {
     .filter(post => post.validated === 1)
     .filter(post => {
       if (selectedTags.length === 0) return true;
-      return selectedTags.every(tag => post.tags.includes(parseInt(tag)));
+      return post.tags.some(tag => selectedTags.includes(tag.toString()));
     })
     .filter(post => post.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -278,11 +330,25 @@ export default function PostList() {
           <SortButton onClick={handleSortChange}>
             {sortOrder === 'DESC' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           </SortButton>
-          <TagSelect multiple onChange={handleTagChange} value={selectedTags}>
-            {tags.map(tag => (
-              <option key={tag.id} value={tag.id}>{tag.name}</option>
-            ))}
-          </TagSelect>
+          <TagDropdown>
+            <TagDropdownButton onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}>
+              Filtrar por tags
+              {isTagDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </TagDropdownButton>
+            <TagDropdownContent isOpen={isTagDropdownOpen}>
+              {tags.map(tag => (
+                <TagOption key={tag.id}>
+                  <input
+                    type="checkbox"
+                    id={`tag-${tag.id}`}
+                    checked={selectedTags.includes(tag.id.toString())}
+                    onChange={() => handleTagChange(tag.id.toString())}
+                  />
+                  <label htmlFor={`tag-${tag.id}`}>{tag.name}</label>
+                </TagOption>
+              ))}
+            </TagDropdownContent>
+          </TagDropdown>
           <SortButton onClick={handleClearTags}>
             <X size={16} />
           </SortButton>
