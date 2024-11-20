@@ -143,6 +143,15 @@ const ReviewItem = styled.div`
   border-radius: 8px;
 `;
 
+const Tag = styled.span`
+  background-color: #e0e0e0;
+  color: #333;
+  border-radius: 5px;
+  padding: 5px 10px;
+  margin-right: 5px;
+  display: inline-block;
+`;
+
 export default function SinglePost() {
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -163,6 +172,9 @@ export default function SinglePost() {
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [editedRating, setEditedRating] = useState(0);
   const [editedComment, setEditedComment] = useState('');
+  
+  
+  
 
   const handleTagChange = (e) => {
     const selectedTags = Array.from(e.target.selectedOptions, option => option.value);    
@@ -173,21 +185,23 @@ export default function SinglePost() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        const [postResponse, userResponse, reviewsResponse] = await Promise.all([
+  
+        const [postResponse, userResponse, reviewsResponse, tagsResponse] = await Promise.all([
           axios.get(`${backendUrl}/api/posts/${id}`, { withCredentials: true }),
           axios.get(`${backendUrl}/api/user`, { withCredentials: true }),
-          axios.get(`${backendUrl}/api/posts/${id}/reviews`, { withCredentials: true })
+          axios.get(`${backendUrl}/api/posts/${id}/reviews`, { withCredentials: true }),
+          axios.get(`${backendUrl}/api/tags`)
         ]);
-
+  
         setPost(postResponse.data);
         setEditedTitle(postResponse.data.title);
         setEditedBody(postResponse.data.body);
         setCurrentUser(userResponse.data);
         setReviews(reviewsResponse.data);
-
+        setTags(tagsResponse.data);
+  
         setHasUserReviewed(reviewsResponse.data.some(review => review.user_id === userResponse.data.id));
-
+  
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -195,13 +209,27 @@ export default function SinglePost() {
         setLoading(false);
       }
     };
-
+  
     fetchData();
   }, [id]);
 
-  const handleEdit = () => {
-    setIsEditing(true);
+  const handleEdit = async () => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Vas a editar esta publicación. Los cambios deberán ser validados por un moderador.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, editar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      setIsEditing(true);
+    }
   };
+
 
   const handleImageChange = (e) => {
     setEditedImage(e.target.files[0]);
@@ -209,31 +237,50 @@ export default function SinglePost() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-
+  
     try {
-
-
-      await axios.put(`${backendUrl}/api/posts/${id}`, 
-      {
-        title: editedTitle,
-        body: editedBody,
-        image: editedImage ? editedImage : '',
-        tags: tags
-      }, {
+      const formData = new FormData();
+      formData.append('title', editedTitle);
+      formData.append('body', editedBody);
+      if (editedImage) {
+        formData.append('image', editedImage);
+      }
+      formData.append('tags', JSON.stringify(tags));
+  
+      await axios.put(`${backendUrl}/api/posts/${id}`, formData, {
         withCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+  
       const response = await axios.get(`${backendUrl}/api/posts/${id}`, { withCredentials: true });
-            
+  
       setPost(response.data);
       setIsEditing(false);
+
+      // Show alert after successful edit
+      await Swal.fire({
+        title: 'Publicación actualizada',
+        text: 'Los cambios de la publicación serán validados por un moderador.',
+        icon: 'success',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
     } catch (err) {
       setError('Error al actualizar la publicación');
+      Swal.fire({
+        title: 'Error',
+        text: 'Error al actualizar la publicación. Por favor, inténtalo de nuevo.',
+        icon: 'error',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'OK'
+      });
     }
+    //refresh
+    window.location.reload();
   };
+
 
   const handleDelete = async () => {
     const result = await Swal.fire({
@@ -263,14 +310,29 @@ export default function SinglePost() {
   };
 
   const handleValidate = async () => {
-    try {
-      await axios.put(`${backendUrl}/api/posts/${id}/validate`, {}, {
-        withCredentials: true
-      });
-      setPost({ ...post, validated: 1 });
-      navigate(-1);
-    } catch (err) {
-      setError('Error al validar la publicación');
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción validará la publicación.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, validar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.put(`${backendUrl}/api/posts/${id}/validate`, {}, {
+          withCredentials: true
+        });
+        setPost({ ...post, validated: 1 });
+        Swal.fire('Validado', 'La publicación ha sido validada.', 'success');
+        navigate(-1);
+      } catch (err) {
+        console.error('Error validating the post:', err);
+        Swal.fire('Error', 'Error al validar la publicación.', 'error');
+      }
     }
   };
 
@@ -326,14 +388,14 @@ export default function SinglePost() {
 
   const handleDeleteReview = async (reviewId) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
+      title: 'Estas seguro?',
       text: 'Esta acción eliminará la reseña de forma permanente.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, delete it',
-      cancelButtonText: 'Cancel'
+      confirmButtonText: 'Aceptar',
+      cancelButtonText: 'Cancelar'
     });
   
     if (result.isConfirmed) {
@@ -402,20 +464,11 @@ export default function SinglePost() {
   };
 
 
-  const renderTags = (tags) => {
-    const tagNames = {
-      0: 'Matemática',
-      1: 'Ciencia',
-      2: 'Filosofía',
-      3: 'Historia',
-      4: 'Literatura',
-      5: 'Tecnología',
-      6: 'Arte',
-      7: 'Política',
-      8: 'Economía',
-      9: 'Psicología'
-    };
-    return tags.map(tagId => <span key={tagId} className="tag">{tagNames[tagId]}</span>);
+  const renderTags = (postTags) => {
+    return postTags.map(tagId => {
+      const tag = tags.find(t => t.id === tagId);
+      return <Tag key={tagId}>{tag ? tag.name : tagId}</Tag>;
+    });
   };
 
   return (

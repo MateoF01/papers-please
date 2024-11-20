@@ -15,18 +15,7 @@ const openai = new OpenAI({
 const app = express();
 const db = new sqlite3.Database('./database.db');
 
-const TAGS = {
-    0: 1,    // matemática
-    1: 2,    // ciencia
-    2: 4,    // filosofía
-    3: 8,    // historia
-    4: 16,   // literatura
-    5: 32,   // tecnologia
-    6: 64,   // arte
-    7: 128,  // politica
-    8: 256,  // economia
-    9: 512,  // psicologia
-};
+
 
 app.use(bodyParser.json());
 app.use(cors({
@@ -48,7 +37,6 @@ app.use((req, res, next) => {
     );
     next();
   });
-
 
 app.use(session({
     secret: process.env.SECRET,
@@ -83,6 +71,36 @@ const upload = multer({ storage });
 //--------------- ENDPOINTS (ORDENAR) ----------------------
 
 
+
+
+// Endpoint to add a new tag
+app.post('/api/tags', (req, res) => {
+    const { tagName } = req.body;
+
+    if (!tagName) {
+        return res.status(400).json({ error: 'Tag name is required' });
+    }
+
+    const query = `INSERT INTO tags (name) VALUES (?)`;
+    db.run(query, [tagName], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Error adding tag' });
+        }
+        res.json({ message: 'Tag added successfully', tag: { id: this.lastID, name: tagName } });
+    });
+});
+
+// Endpoint to get all tags
+app.get('/api/tags', (req, res) => {
+    const query = `SELECT * FROM tags`;
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error fetching tags' });
+        }
+        res.json(rows);
+    });
+});
+
 // Chat con IA de openai
 app.post('/api/chat', async (req, res) => {
     try {
@@ -93,7 +111,7 @@ app.post('/api/chat', async (req, res) => {
       const fullMessages = [systemMessage, ...messages];
   
       const completion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o-mini",
         messages: fullMessages,
       });
   
@@ -316,11 +334,11 @@ app.post('/api/logout', (req, res) => {
 });
 
 
-// agrego nuevo posteo
+// Endpoint to create a new post
 app.post('/api/posts', verificarAutenticacion, upload.single('image'), (req, res) => {
     console.log('Received post request:', req.body);
     console.log('User ID from session:', req.session.usuarioId);
-    const { title, body , tags} = req.body;
+    const { title, body, tags } = req.body;
     const userId = req.session.usuarioId;
     const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
 
@@ -332,39 +350,52 @@ app.post('/api/posts', verificarAutenticacion, upload.single('image'), (req, res
         return res.status(400).json({ error: 'At least one Tag is required' });
     }
 
-    let tagsValue = 0
-    if(Array.isArray(tags)){
-        tags.forEach(tagId => {
-            if (TAGS[tagId] !== undefined) {
-                tagsValue |= TAGS[tagId];  // Sumar el valor de la etiqueta usando OR bitwise
-            }
-        });
+    let tagsArray;
+    try {
+        tagsArray = JSON.parse(tags);
+    } catch (error) {
+        return res.status(400).json({ error: 'Invalid tags format' });
     }
 
-    const sql = `INSERT INTO posts (user_id, title, body, image, tags, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))`;
+    let tagsValue = 0;
+    if (Array.isArray(tagsArray)) {
+        const tagIds = tagsArray.map(tagId => parseInt(tagId));
+        const query = `SELECT id FROM tags WHERE id IN (${tagIds.join(',')})`;
+        db.all(query, [], (err, rows) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error fetching tags' });
+            }
+            rows.forEach(row => {
+                tagsValue |= (1 << row.id);  // Sumar el valor de la etiqueta usando OR bitwise
+            });
 
-    db.run(sql, [userId, title, body, imagePath, tagsValue], function(err) {
-        if (err) {
-            console.error('Error creating post:', err);
-            return res.status(500).json({ error: 'Error al crear la publicación' });
-        }
-        
-        res.status(201).json({
-            id: this.lastID,
-            user_id: userId,
-            title,
-            body,
-            image: imagePath,
-            tags: tagsValue,
-            created_at: new Date().toISOString()
+            const sql = `INSERT INTO posts (user_id, title, body, image, tags, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))`;
+
+            db.run(sql, [userId, title, body, imagePath, tagsValue], function(err) {
+                if (err) {
+                    console.error('Error creating post:', err);
+                    return res.status(500).json({ error: 'Error al crear la publicación' });
+                }
+
+                res.status(201).json({
+                    id: this.lastID,
+                    user_id: userId,
+                    title,
+                    body,
+                    image: imagePath,
+                    tags: tagsValue,
+                    created_at: new Date().toISOString()
+                });
+            });
         });
-    });
+    } else {
+        return res.status(400).json({ error: 'Tags should be an array' });
+    }
 });
 
 
 // Me traigo todos los posteo con orden
 app.get('/api/posts', (req, res) => {
-
     const { orderBy = 'created_at', order = 'DESC' } = req.query;
 
     const validOrderTypes = ['created_at', 'title', 'user_name'];
@@ -373,7 +404,7 @@ app.get('/api/posts', (req, res) => {
     if (!validOrderTypes.includes(orderBy) || !validOrderDirections.includes(order.toUpperCase())) {
         return res.status(400).json({ error: 'Invalid order parameters' });
     }
-    
+
     const sql = `
         SELECT posts.*, users.user_name, users.isAdmin as user_isAdmin
         FROM posts 
@@ -386,21 +417,32 @@ app.get('/api/posts', (req, res) => {
             return res.status(500).json({ error: err.message });
         }
 
-        const postsWithTags = posts.map(post => {
-            const decodedTags = Object.keys(TAGS).filter(tagId => (post.tags & TAGS[tagId]) !== 0);
-            return {
-                ...post,
-                tags: decodedTags.map(Number)
-            };
-        });
+        const tagQuery = `SELECT * FROM tags`;
+        db.all(tagQuery, [], (err, tags) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error fetching tags' });
+            }
 
-        res.json(postsWithTags);
+            const tagMap = {};
+            tags.forEach(tag => {
+                tagMap[tag.id] = tag.name;
+            });
+
+            const postsWithTags = posts.map(post => {
+                const decodedTags = Object.keys(tagMap).filter(tagId => (post.tags & (1 << tagId)) !== 0);
+                return {
+                    ...post,
+                    tags: decodedTags.map(Number)
+                };
+            });
+
+            res.json(postsWithTags);
+        });
     });
 });
 
 // Obtener publicaciones pendientes de validación
 app.get('/api/posts/to-validate', (req, res) => {
-
     const { orderBy = 'created_at', order = 'DESC' } = req.query;
 
     const validOrderTypes = ['created_at', 'title', 'user_name'];
@@ -409,7 +451,7 @@ app.get('/api/posts/to-validate', (req, res) => {
     if (!validOrderTypes.includes(orderBy) || !validOrderDirections.includes(order.toUpperCase())) {
         return res.status(400).json({ error: 'Invalid order parameters' });
     }
-    
+
     const sql = `
         SELECT posts.*, users.user_name 
         FROM posts 
@@ -417,22 +459,33 @@ app.get('/api/posts/to-validate', (req, res) => {
         WHERE posts.validated = 0 
         ORDER BY ${orderBy} ${order.toUpperCase()}
     `;
-    
+
     db.all(sql, [], (err, rows) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
 
-        const postsWithTags = rows.map(rows => {
-            const decodedTags = Object.keys(TAGS).filter(tagId => (rows.tags & TAGS[tagId]) !== 0);
-            return {
-                ...rows,
-                tags: decodedTags.map(Number)
-            };
-        });
+        const tagQuery = `SELECT * FROM tags`;
+        db.all(tagQuery, [], (err, tags) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error fetching tags' });
+            }
 
-        res.json(postsWithTags);
-        // res.json(rows);
+            const tagMap = {};
+            tags.forEach(tag => {
+                tagMap[tag.id] = tag.name;
+            });
+
+            const postsWithTags = rows.map(post => {
+                const decodedTags = Object.keys(tagMap).filter(tagId => (post.tags & (1 << tagId)) !== 0);
+                return {
+                    ...post,
+                    tags: decodedTags.map(Number)
+                };
+            });
+
+            res.json(postsWithTags);
+        });
     });
 });
 
@@ -476,18 +529,29 @@ app.get('/api/posts/:id', (req, res) => {
             return res.status(404).json({ error: 'Post not found' });
         }
 
-        const decodedTags = Object.keys(TAGS).filter(tagId => (row.tags & TAGS[tagId]) !== 0).map(Number);
+        const tagQuery = `SELECT * FROM tags`;
+        db.all(tagQuery, [], (err, tags) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error fetching tags' });
+            }
 
-        res.json({
-            ...row,
-            tags: decodedTags  // Array de IDs de tags
+            const tagMap = {};
+            tags.forEach(tag => {
+                tagMap[tag.id] = tag.name;
+            });
+
+            const decodedTags = Object.keys(tagMap).filter(tagId => (row.tags & (1 << tagId)) !== 0).map(Number);
+
+            res.json({
+                ...row,
+                tags: decodedTags  // Array de IDs de tags
+            });
         });
     });
 });
 
 // Traigo posteos del usuario loggeado
 app.get('/api/posts/user/me', verificarAutenticacion, (req, res) => {
-
     const { orderBy = 'created_at', order = 'DESC' } = req.query;
 
     const validOrderTypes = ['created_at', 'title', 'user_name'];
@@ -504,27 +568,37 @@ app.get('/api/posts/user/me', verificarAutenticacion, (req, res) => {
         WHERE posts.user_id = ? 
         ORDER BY ${orderBy} ${order.toUpperCase()}
     `;
-    
+
     db.all(sql, [req.session.usuarioId], (err, rows) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
 
-        const postsWithTags = rows.map(rows => {
-            const decodedTags = Object.keys(TAGS).filter(tagId => (rows.tags & TAGS[tagId]) !== 0);
-            return {
-                ...rows,
-                tags: decodedTags.map(Number)
-            };
-        });
+        const tagQuery = `SELECT * FROM tags`;
+        db.all(tagQuery, [], (err, tags) => {
+            if (err) {
+                return res.status(500).json({ error: 'Error fetching tags' });
+            }
 
-        res.json(postsWithTags);
-        // res.json(rows);
+            const tagMap = {};
+            tags.forEach(tag => {
+                tagMap[tag.id] = tag.name;
+            });
+
+            const postsWithTags = rows.map(post => {
+                const decodedTags = Object.keys(tagMap).filter(tagId => (post.tags & (1 << tagId)) !== 0);
+                return {
+                    ...post,
+                    tags: decodedTags.map(Number)
+                };
+            });
+
+            res.json(postsWithTags);
+        });
     });
 });
 
-// Actualizo un posteo
-
+// Endpoint to update a post
 app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, res) => {
     let { title, body, tags } = req.body;
 
@@ -545,31 +619,53 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
         // Calcular el valor de tags; si `tags` está vacío o no se envía, `tagsValue` será 0
         let tagsValue = 0;
         if (Array.isArray(tags) && tags.length > 0) {
-            tags.forEach(tagId => {
-                if (TAGS[tagId] !== undefined) {
-                    tagsValue |= TAGS[tagId];  // Sumar el valor de la etiqueta usando OR bitwise
+            const tagIds = tags.map(tagId => parseInt(tagId));
+            const query = `SELECT id FROM tags WHERE id IN (${tagIds.join(',')})`;
+            db.all(query, [], (err, rows) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Error fetching tags' });
                 }
+                rows.forEach(row => {
+                    tagsValue |= (1 << row.id);  // Sumar el valor de la etiqueta usando OR bitwise
+                });
+
+                // Actualizar la publicación en la base de datos
+                const sql = `UPDATE posts SET title = ?, body = ?, tags = ?, validated = 0, image = COALESCE(?, image) WHERE id = ?`;
+                db.run(sql, [title, body, tagsValue, newImagePath, req.params.id], function(err) {
+                    if (err) {
+                        return res.status(500).json({ error: err.message });
+                    }
+
+                    // Eliminar la imagen anterior si se ha cargado una nueva
+                    if (newImagePath && row.image) {
+                        const oldImagePath = `./uploads/${path.basename(row.image)}`;
+                        fs.unlink(oldImagePath, (unlinkErr) => {
+                            if (unlinkErr) console.error('Error deleting old image:', unlinkErr);
+                        });
+                    }
+
+                    res.status(200).json({ message: 'Post updated successfully' });
+                });
+            });
+        } else {
+            // Actualizar la publicación en la base de datos sin cambiar las etiquetas
+            const sql = `UPDATE posts SET title = ?, body = ?, validated = 0, image = COALESCE(?, image) WHERE id = ?`;
+            db.run(sql, [title, body, newImagePath, req.params.id], function(err) {
+                if (err) {
+                    return res.status(500).json({ error: err.message });
+                }
+
+                // Eliminar la imagen anterior si se ha cargado una nueva
+                if (newImagePath && row.image) {
+                    const oldImagePath = `./uploads/${path.basename(row.image)}`;
+                    fs.unlink(oldImagePath, (unlinkErr) => {
+                        if (unlinkErr) console.error('Error deleting old image:', unlinkErr);
+                    });
+                }
+
+                res.status(200).json({ message: 'Post updated successfully' });
             });
         }
-
-
-        // Actualizar la publicación en la base de datos
-        const sql = `UPDATE posts SET title = ?, body = ?, tags = ?, validated = 0, image = COALESCE(?, image) WHERE id = ?`;
-        db.run(sql, [title, body, tagsValue, newImagePath, req.params.id], function(err) {
-            if (err) {
-                return res.status(500).json({ error: err.message });
-            }
-
-            // Eliminar la imagen anterior si se ha cargado una nueva
-            if (newImagePath && row.image) {
-                const oldImagePath = `./uploads/${path.basename(row.image)}`;
-                fs.unlink(oldImagePath, (unlinkErr) => {
-                    if (unlinkErr) console.error('Error deleting old image:', unlinkErr);
-                });
-            }
-
-            res.json({ message: 'Post updated successfully' });
-        });
     });
 });
 

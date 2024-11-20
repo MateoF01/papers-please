@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import DefaultButton from './components/button/DefaultButton';
 import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import BackgroundImage from './background.png';
@@ -14,14 +15,28 @@ function Publication() {
   const [image, setImage] = useState(null);
   const [error, setError] = useState(null);
   const [tags, setTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await axios.get(`${backendUrl}/api/tags`);
+        setTags(response.data);
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+      }
+    };
+
+    fetchTags();
+  }, []);
 
   const handleTagChange = (e) => {
     const selectedTags = Array.from(e.target.selectedOptions, option => option.value);
-    setTags(selectedTags);
+    setSelectedTags(selectedTags);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -32,25 +47,40 @@ function Publication() {
     if (image) {
       formData.append('image', image); 
     }
-    formData.append('tags', JSON.stringify(tags)); // Add tags to formData
+    formData.append('tags', JSON.stringify(selectedTags));
 
-    axios.post(`${backendUrl}/api/posts`, formData, {
-      withCredentials: true,
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-      .then((response) => {
-        console.log('Publication created successfully:', response.data);
-        setLoading(false);
-        alert('Tu publicación será validada por un moderador pronto.'); 
-        navigate('/home');
-      })
-      .catch((error) => {
-        setLoading(false);
-        console.error('Error creating publication:', error.response?.data || error.message);
-        setError(error.response?.data?.error || 'Error al crear la publicación. Por favor, inténtalo de nuevo.');
+    try {
+      const response = await axios.post(`${backendUrl}/api/posts`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
+      console.log('Publication created successfully:', response.data);
+      setLoading(false);
+      
+      await Swal.fire({
+        title: 'Publicación creada',
+        text: 'Tu publicación será validada por un moderador pronto.',
+        icon: 'success',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      
+      navigate('/home');
+    } catch (error) {
+      setLoading(false);
+      console.error('Error creating publication:', error.response?.data || error.message);
+      setError(error.response?.data?.error || 'Error al crear la publicación. Por favor, inténtalo de nuevo.');
+      
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.error || 'Error al crear la publicación. Por favor, inténtalo de nuevo.',
+        icon: 'error',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'OK'
+      });
+    }
   };
 
   const handleImageChange = (e) => {
@@ -126,16 +156,9 @@ function Publication() {
             style={InputStyle}
           />
           <select multiple onChange={handleTagChange} style={InputStyle}>
-            <option value="0">Matemática</option>
-            <option value="1">Ciencia</option>
-            <option value="2">Filosofía</option>
-            <option value="3">Historia</option>
-            <option value="4">Literatura</option>
-            <option value="5">Tecnología</option>
-            <option value="6">Arte</option>
-            <option value="7">Política</option>
-            <option value="8">Economía</option>
-            <option value="9">Psicología</option>
+            {tags.map(tag => (
+              <option key={tag.id} value={tag.id}>{tag.name}</option>
+            ))}
           </select>
           <div style={ButtonContainerStyle}>
             <DefaultButton

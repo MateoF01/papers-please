@@ -99,21 +99,6 @@ const ForumLink = styled(Link)`
   display: block;
 `;
 
-const ForumImage = styled.img`
-  width: 120px;
-  height: 120px;
-  border-radius: 8px;
-  object-fit: cover;
-  flex-shrink: 0;
-`;
-
-const ForumImagePlaceholder = styled.div`
-  width: 120px;
-  height: 120px;
-  border-radius: 8px;
-  background-color: #f0f0f0;
-  flex-shrink: 0;
-`;
 
 const AdminName = styled.span`
   color: #28a745;
@@ -218,14 +203,7 @@ function ForumList() {
                 </ForumMeta>
                 <p>{forum.body.substring(0, 150)}...</p>
               </ForumContent>
-              {forum.image ? (
-                <ForumImage 
-                  src={`${backendUrl}${forum.image}`} 
-                  alt={`Imagen de ${forum.title}`}
-                />
-              ) : (
-                <ForumImagePlaceholder />
-              )}
+              
             </ForumCard>
           </ForumLink>
         ))}

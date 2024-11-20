@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
+import { Search, ChevronUp, ChevronDown, X } from 'lucide-react';
 import backgroundImage from './background.png';
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
@@ -20,7 +21,7 @@ const RootContainer = styled.div`
 `;
 
 const PostContainer = styled.div`
-  padding: 80px 20px 20px 20px;
+  padding: 80px 20px 20px;
   max-width: 800px;
   margin: 0 auto;
   position: relative;
@@ -28,30 +29,56 @@ const PostContainer = styled.div`
 `;
 
 const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 200px auto auto auto auto;
+  gap: 8px;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const SearchInput = styled.div`
+  position: relative;
+  width: 200px;
+
+  input {
+    width: 100%;
+    padding: 8px 32px 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    height: 38px;
+    box-sizing: border-box;
+  }
+
+  svg {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+  }
 `;
 
 const SortButton = styled.button`
   background: white;
   border: none;
   color: #666;
-  font-size: 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  margin-bottom: 15px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   transition: color 0.3s ease;
   font-weight: 600;
-  line-height: 26px;
-  padding-left: 20px;
-  padding-right: 20px;
-  height: 55px;
-  border-radius: 10px;  
-  margin-right: 10px;
+  padding: 8px 16px;
+  height: 38px;
+  border-radius: 10px;
+  white-space: nowrap;
   
   &:hover {
     color: #333;
@@ -62,12 +89,17 @@ const SortButton = styled.button`
   }
 `;
 
-const SearchInput = styled.input`
-  padding: 10px;
+const TagSelect = styled.select`
+  padding: 8px;
+  border-radius: 10px;
   border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 200px;
-  margin-right: 10px;
+  height: 38px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  min-width: 120px;
+  box-sizing: border-box;
 `;
 
 const PostCard = styled.div`
@@ -91,7 +123,7 @@ const PostContent = styled.div`
 `;
 
 const PostTitle = styled.h2`
-  margin: 0 0 10px 0;
+  margin: 0 0 10px;
   color: #333;
 `;
 
@@ -128,19 +160,30 @@ const AdminName = styled.span`
   font-weight: bold;
 `;
 
-const SortButtonsContainer = styled.div`
+const TagsContainer = styled.div`
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
 `;
 
-function PostList() {
+const Tag = styled.span`
+  background-color: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  color: #666;
+`;
+
+export default function PostList() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortOrder, setSortOrder] = useState('DESC');
   const [orderBy, setOrderBy] = useState('created_at');
   const [selectedTags, setSelectedTags] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(''); // Estado para el texto de búsqueda
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -159,20 +202,29 @@ function PostList() {
     fetchPosts();
   }, [orderBy, sortOrder]);
 
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await axios.get(`${backendUrl}/api/tags`);
+        setTags(response.data);
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+      }
+    };
+    fetchTags();
+  }, []);
+
   const handleSortChange = () => {
     setSortOrder(prevOrder => (prevOrder === 'ASC' ? 'DESC' : 'ASC'));
   };
 
-  const handleOrderByChange2 = () => {
+  const handleOrderByChange = () => {
     setOrderBy(prevOrder => {
-      if (prevOrder === 'created_at'){
-        return 'title'
-      } else if (prevOrder === "title"){
-        return 'user_name'
-      } else{
-        return 'created_at'
-      }})
-  }
+      if (prevOrder === 'created_at') return 'title';
+      if (prevOrder === 'title') return 'user_name';
+      return 'created_at';
+    });
+  };
 
   const handleTagChange = (e) => {
     const selectedTags = Array.from(e.target.selectedOptions, option => option.value);
@@ -184,35 +236,26 @@ function PostList() {
   };
 
   const filteredPosts = posts
+    .filter(post => post.validated === 1)
     .filter(post => {
       if (selectedTags.length === 0) return true;
       return selectedTags.every(tag => post.tags.includes(parseInt(tag)));
     })
     .filter(post => post.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const sortedPosts = filteredPosts.filter(post => post.validated === 1);
-
   const renderAuthorName = (post) => {
-    if (post.user_isAdmin === 1) {
-      return <AdminName>{post.user_name} (admin)</AdminName>;
-    }
-    return post.user_name;
+    return post.user_isAdmin === 1 ? <AdminName>{post.user_name} (admin)</AdminName> : post.user_name;
   };
 
-  const renderTags = (tags) => {
-    const tagNames = {
-      0: 'Matemática',
-      1: 'Ciencia',
-      2: 'Filosofía',
-      3: 'Historia',
-      4: 'Literatura',
-      5: 'Tecnología',
-      6: 'Arte',
-      7: 'Política',
-      8: 'Economía',
-      9: 'Psicología'
-    };
-    return tags.map(tagId => <span key={tagId} className="tag">{tagNames[tagId]}</span>);
+  const renderTags = (postTags) => {
+    return (
+      <TagsContainer>
+        {postTags.map(tagId => {
+          const tag = tags.find(t => t.id === tagId);
+          return <Tag key={tagId}>{tag ? tag.name : tagId}</Tag>;
+        })}
+      </TagsContainer>
+    );
   };
 
   return (
@@ -220,46 +263,34 @@ function PostList() {
       <RootContainer />
       <PostContainer>
         <Header>
-          <SearchInput 
-            type="text" 
-            placeholder="Buscar por título..." 
-            value={searchTerm} 
-            onChange={e => setSearchTerm(e.target.value)} 
-          />
-          {/* <SortButton onClick={() => handleOrderByChange2()}>
+          <SearchInput>
+            <input 
+              type="text" 
+              placeholder="Buscar..." 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+            />
+            <Search size={16} />
+          </SearchInput>
+          <SortButton onClick={handleOrderByChange}>
             {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
           </SortButton>
           <SortButton onClick={handleSortChange}>
-            {sortOrder === 'DESC' ? '▼' : '▲'}
-          </SortButton> */}
-          <SortButtonsContainer>
-            <SortButton onClick={handleOrderByChange2}>
-              {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
-            </SortButton>
-            <SortButton onClick={handleSortChange}>
-              {sortOrder === 'DESC' ? '▼' : '▲'}
-            </SortButton>
-          </SortButtonsContainer>
-          <select multiple onChange={handleTagChange} style={{ marginLeft: '10px', padding: '10px', borderRadius: '10px', border: '1px solid #ccc', height: '55px', fontSize: '1rem', fontWeight: '600', color: '#666', cursor: 'pointer' }}>
-            <option value="0">Matemática</option>
-            <option value="1">Ciencia</option>
-            <option value="2">Filosofía</option>
-            <option value="3">Historia</option>
-            <option value="4">Literatura</option>
-            <option value="5">Tecnología</option>
-            <option value="6">Arte</option>
-            <option value="7">Política</option>
-            <option value="8">Economía</option>
-            <option value="9">Psicología</option>
-          </select>
-          <SortButton onClick={handleClearTags} >
-           Eliminar Filtros
+            {sortOrder === 'DESC' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </SortButton>
+          <TagSelect multiple onChange={handleTagChange} value={selectedTags}>
+            {tags.map(tag => (
+              <option key={tag.id} value={tag.id}>{tag.name}</option>
+            ))}
+          </TagSelect>
+          <SortButton onClick={handleClearTags}>
+            <X size={16} />
           </SortButton>
         </Header>
         
         {loading && <div>Cargando...</div>}
         {error && <div>{error}</div>}
-        {!loading && !error && sortedPosts.map(post => (
+        {!loading && !error && filteredPosts.map(post => (
           <PostLink to={`/post/${post.id}`} key={post.id}>
             <PostCard>
               <PostContent>
@@ -268,7 +299,7 @@ function PostList() {
                   Por {renderAuthorName(post)} • {new Date(post.created_at).toLocaleDateString()}                
                 </PostMeta>
                 <p>{post.body.substring(0, 150)}...</p>
-                <div>Tags: {renderTags(post.tags)}</div>
+                {renderTags(post.tags)}
               </PostContent>
               {post.image ? (
                 <PostImage 
@@ -281,7 +312,7 @@ function PostList() {
             </PostCard>
           </PostLink>
         ))}
-        {!loading && !error && sortedPosts.length === 0 && (
+        {!loading && !error && filteredPosts.length === 0 && (
           <PostCard>
             <p>No hay publicaciones disponibles en este momento.</p>
           </PostCard>
@@ -290,5 +321,3 @@ function PostList() {
     </>
   );
 }
-
-export default PostList;

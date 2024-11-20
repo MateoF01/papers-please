@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
 import backgroundImage from './background.png';
+import Swal from 'sweetalert2';
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
@@ -47,26 +48,31 @@ const SortButton = styled.button`
   color: #666;
   font-size: 1rem;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: color 0.3s ease;
-  font-weight: 600;
-  line-height: 26px;
-  padding-left: 20px;
-  padding-right: 20px;
-  // min-width: 124px;
-  height: 55px;
-  border-radius: 10px;
+  padding: 10px;
+  border-radius: 5px;
+  margin-left: 10px;
+`;
+
+const FormContainer = styled.div`
+  margin-bottom: 20px;
+`;
+
+const Input = styled.input`
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
   margin-right: 10px;
+`;
 
-  &:hover {
-    color: #333;
-  }
-
-  &:focus {
-    outline: none;
-  }
+const Button = styled.button`
+  padding: 10px 20px;
+  font-size: 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 `;
 
 const Card = styled.div`
@@ -94,24 +100,6 @@ const ButtonContainer = styled.div`
   justify-content: flex-start;
   gap: 10px;
   margin-top: 10px;
-`;
-
-const Button = styled.button`
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: opacity 0.2s;
-
-  &:hover {
-    opacity: 0.9;
-  }
-
-  &:focus {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-  }
 `;
 
 const ValidateButton = styled(Button)`
@@ -154,16 +142,20 @@ export default function PostListToValidate() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentUser, setCurrentUser] = useState(null);
   const [orderBy, setOrderBy] = useState('created_at');
+  const [newTag, setNewTag] = useState('');
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     const fetchPostsAndUser = async () => {
       try {
-        const [postsResponse, userResponse] = await Promise.all([
+        const [postsResponse, userResponse, tagsResponse] = await Promise.all([
           axios.get(`${backendUrl}/api/posts/to-validate`, {params: {orderBy, order: sortOrder}, withCredentials: true }),
-          axios.get(`${backendUrl}/api/user`, { withCredentials: true })
+          axios.get(`${backendUrl}/api/user`, { withCredentials: true }),
+          axios.get(`${backendUrl}/api/tags`)
         ]);
         setPosts(postsResponse.data);
         setCurrentUser(userResponse.data);
+        setTags(tagsResponse.data);
         setLoading(false);
       } catch (err) {
         setError('Error loading data');
@@ -174,16 +166,40 @@ export default function PostListToValidate() {
     fetchPostsAndUser();
   }, [orderBy, sortOrder]);
 
-  const handleValidatePost = async (postId) => {
+  const handleAddTag = async (e) => {
+    e.preventDefault();
     try {
-      await axios.put(`${backendUrl}/api/posts/${postId}/validate`, {}, {
-        withCredentials: true
-      });
-      // Remove the validated post from the list
-      setPosts(posts.filter(post => post.id !== postId));
-    } catch (err) {
-      console.error("Error validating the post", err);
-      setError('Error validating the post');
+      const response = await axios.post(`${backendUrl}/api/tags`, { tagName: newTag });
+      setTags([...tags, response.data.tag]);
+      setNewTag('');
+    } catch (error) {
+      console.error('Error adding tag:', error);
+    }
+  };
+
+  const handleValidatePost = async (postId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción validará la publicación.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, validar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.put(`${backendUrl}/api/posts/${postId}/validate`, {}, {
+          withCredentials: true
+        });
+        setPosts(posts.filter(post => post.id !== postId));
+        Swal.fire('Validado', 'La publicación ha sido validada.', 'success');
+      } catch (err) {
+        console.error("Error validating the post", err);
+        Swal.fire('Error', 'Error al validar la publicación.', 'error');
+      }
     }
   };
 
@@ -192,15 +208,30 @@ export default function PostListToValidate() {
       setError('User information not available');
       return;
     }
-    try {
-      await axios.delete(`${backendUrl}/api/posts/${postId}`, {
-        withCredentials: true,
-        data: { isAdmin: currentUser.isAdmin }
-      });
-      setPosts(posts.filter(post => post.id !== postId));
-    } catch (err) {
-      console.error("Error deleting the post", err);
-      setError('Error deleting the post: ' + (err.response?.data?.error || err.message));
+
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará la publicación de forma permanente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/posts/${postId}`, {
+          withCredentials: true,
+          data: { isAdmin: currentUser.isAdmin }
+        });
+        setPosts(posts.filter(post => post.id !== postId));
+        Swal.fire('Eliminado', 'La publicación ha sido eliminada.', 'success');
+      } catch (err) {
+        console.error("Error deleting the post", err);
+        Swal.fire('Error', 'Error al eliminar la publicación.', 'error');
+      }
     }
   };
 
@@ -221,6 +252,13 @@ export default function PostListToValidate() {
 
   const sortedPosts = [...posts];
 
+  const renderTags = (postTags) => {
+    return postTags.map(tagId => {
+      const tag = tags.find(t => t.id === tagId);
+      return <span key={tagId} className="tag">{tag ? tag.name : tagId}</span>;
+    });
+  };
+
   return (
     <>
       <RootContainer />
@@ -234,7 +272,17 @@ export default function PostListToValidate() {
             {sortOrder === 'DESC' ? '▼' : '▲'}
           </SortButton>
           </Header>
-
+          <FormContainer>
+            <form onSubmit={handleAddTag}>
+              <Input
+                type="text"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                placeholder="Nuevo tag"
+              />
+              <Button type="submit">Agregar</Button>
+            </form>
+          </FormContainer>
           {loading && <Card>Loading...</Card>}
           {error && <Error>{error}</Error>}
           {!loading && !error && sortedPosts.length === 0 && (
@@ -251,6 +299,7 @@ export default function PostListToValidate() {
                 By {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
               </Meta>
               <p>{post.body.substring(0, 150)}...</p>
+              <div>Tags: {renderTags(post.tags)}</div>
               {post.validated === 0 && (
                 <ValidationMessage>Validación pendiente</ValidationMessage>
               )}
