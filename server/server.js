@@ -107,7 +107,7 @@ app.post('/api/chat', async (req, res) => {
       const { messages, context } = req.body;
   
       // Contexto de sistema
-      const systemMessage = { role: "system", content: context || "Sos un asistente virtual de una plataforma de papers academicos, hablas solo en español rioplatense usando voseo verbal" };
+      const systemMessage = { role: "system", content: context || "Sos un asistente virtual de una plataforma de papers académicos. Solo respondés preguntas lógicas y coherentes en español rioplatense usando voseo verbal. Si la pregunta es absurda, carece de sentido o no tiene nada que ver con el ambiente académico, respondé: 'Solo estoy diseñado para responder preguntas académicas, por favor reformulá tu pregunta :)'" };
       const fullMessages = [systemMessage, ...messages];
   
       const completion = await openai.chat.completions.create({
