@@ -73,7 +73,7 @@ const upload = multer({ storage });
 
 
 
-// Endpoint to add a new tag
+// Endpoint agregar tag
 app.post('/api/tags', (req, res) => {
     const { tagName } = req.body;
 
@@ -90,7 +90,7 @@ app.post('/api/tags', (req, res) => {
     });
 });
 
-// Endpoint to get all tags
+// Endpoint get tags
 app.get('/api/tags', (req, res) => {
     const query = `SELECT * FROM tags`;
     db.all(query, [], (err, rows) => {

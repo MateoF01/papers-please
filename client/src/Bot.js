@@ -9,8 +9,15 @@ import { Heading1 } from './components/text/Heading';
 import { Paragraph1 } from './components/text/Paragraph';
 import DefaultButton from "./components/button/DefaultButton";
 import backgroundImage from './background.png';
+import einsteinIcon from './Albert-Einstein-Icon-PNG-621960607.png'; // Import the image
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
+
+const Icon = styled.img`
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+`;
 
 const BotContainer = styled.div`
   background-image: url(${backgroundImage});
@@ -122,17 +129,17 @@ function Bot() {
     const userMessage = values.message;
     const newMessage = { role: 'user', content: userMessage };
     setMessages(prevMessages => [...prevMessages, newMessage]);
-  
+
     try {
       const response = await axios.post(`${backendUrl}/api/chat`, { messages: [...messages, newMessage] });
-      const botReply = { role: 'assistant', content: response.data.reply }; // Change 'bot' to 'assistant'
+      const botReply = { role: 'assistant', content: response.data.reply};
       setMessages(prevMessages => [...prevMessages, botReply]);
     } catch (error) {
       console.error('Error sending message:', error);
-      const errorMessage = { role: 'assistant', content: 'Lo siento, ocurrió un error. Por favor, intenta de nuevo.' }; // Change 'bot' to 'assistant'
+      const errorMessage = { role: 'assistant', content: 'Lo siento, ocurrió un error. Por favor, intenta de nuevo.' };
       setMessages(prevMessages => [...prevMessages, errorMessage]);
     }
-  
+
     setSubmitting(false);
     resetForm();
   };
@@ -148,8 +155,11 @@ function Bot() {
         >
           {({ isSubmitting, errors, touched }) => (
             <StyledForm>
-              <Heading1>Chat con EinsteinBot</Heading1>
-              <Paragraph1>Conversa con nuestro EinsteinBot desarrollado con IA!</Paragraph1>
+              <Heading1>
+                <Icon src={einsteinIcon} alt="Einstein Icon" />
+                Chat con EinsteinBot
+              </Heading1>
+              <Paragraph1>Conversa con nuestro EinsteinBot desarrollado mediante IA!</Paragraph1>
 
               <ChatContainer>
                 {messages.map((message, index) => (
