@@ -148,8 +148,8 @@ function Bot() {
         >
           {({ isSubmitting, errors, touched }) => (
             <StyledForm>
-              <Heading1>Chat con Asistente</Heading1>
-              <Paragraph1>Conversa con nuestro asistente virtual de inteligencia artificial!</Paragraph1>
+              <Heading1>Chat con EinsteinBot</Heading1>
+              <Paragraph1>Conversa con nuestro EinsteinBot desarrollado con IA!</Paragraph1>
 
               <ChatContainer>
                 {messages.map((message, index) => (
