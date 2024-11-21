@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Register from './Register';
 import Login from './Login';
 import Home from './Home';
@@ -19,6 +20,8 @@ import AuthenticatedRoute from './components/routes/AuthenticatedRoute';
 import Profile from './Profile';
 import Bot from './Bot';
 import { AuthContext, AuthProvider } from './assets/AuthContext';
+
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
 const Navbar = styled.nav`
   display: flex;
@@ -64,8 +67,8 @@ const DropdownButton = styled.button`
   }
 `;
 
-
 const NavbarButton = styled.button`
+  position: relative;
   background-color: transparent;
   color: #f5f5f5;
   border: none;
@@ -78,8 +81,40 @@ const NavbarButton = styled.button`
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);
   }
-`;
 
+  ${({ hasUnvalidatedPosts }) =>
+    hasUnvalidatedPosts &&
+    `
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+      }
+      
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+      }
+      
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+      }
+    }
+  `}
+`;
 
 const DropdownMenu = styled.div`
   position: absolute;
@@ -88,7 +123,7 @@ const DropdownMenu = styled.div`
   background-color: #fff;
   border-radius: 4px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  display: ${({$isOpen}) => ($isOpen ? 'block' : 'none')};
+  display: ${({ $isOpen }) => ($isOpen ? 'block' : 'none')};
   min-width: 150px;
 `;
 
@@ -128,10 +163,10 @@ const buttonContainerStyle = {
   gap: '30px',
 };
 
-
 function NavbarContent() {
   const { isAuthenticated, isAdmin, handleLogout, checkAuthentication } = useContext(AuthContext);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [hasUnvalidatedPosts, setHasUnvalidatedPosts] = useState(false);
   const navigate = useNavigate();
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
@@ -139,15 +174,31 @@ function NavbarContent() {
   const handleNavigateToPublication = () => {
     navigate('/publication');
   };
-  
+
   const handleLogoutClick = async () => {
-    await handleLogout(); 
-    navigate('/'); 
+    await handleLogout();
+    navigate('/');
   };
 
   useEffect(() => {
-    checkAuthentication(); 
-  }, [isAuthenticated, isAdmin, checkAuthentication]); 
+    checkAuthentication();
+  }, [isAuthenticated, isAdmin, checkAuthentication]);
+
+  useEffect(() => {
+    const checkUnvalidatedPosts = async () => {
+      try {
+        const response = await axios.get(`${backendUrl}/api/posts/to-validate`, { withCredentials: true });
+        const unvalidatedPosts = response.data.some(post => post.validated === 0);
+        setHasUnvalidatedPosts(unvalidatedPosts);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    };
+
+    if (isAdmin) {
+      checkUnvalidatedPosts();
+    }
+  }, [isAdmin]);
 
   return (
     <>
@@ -161,10 +212,11 @@ function NavbarContent() {
             <NavbarButton onClick={() => navigate('/my-posts')}>Ver Mis Publicaciones</NavbarButton>
             <NavbarButton onClick={() => navigate('/new-forum')}>Crear Foro</NavbarButton>
             <NavbarButton onClick={() => navigate('/bot')}>Asistente</NavbarButton>
-
             <NavbarButton onClick={() => navigate('/forums')}>Foros</NavbarButton>
             {isAdmin === 1 && (
-              <NavbarButton onClick={() => navigate('/posts-to-validate')}>Validar Publicaciones</NavbarButton>
+              <NavbarButton onClick={() => navigate('/posts-to-validate')} hasUnvalidatedPosts={hasUnvalidatedPosts}>
+                Validar Publicaciones
+              </NavbarButton>
             )}
             <LogoutButton onClick={handleLogoutClick}>Cerrar Sesión</LogoutButton>
           </>
@@ -193,7 +245,7 @@ function App() {
           {/* Rutas abiertas */}
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-          
+
           {/* Rutas protegidas por autenticación */}
           <Route path="/home" element={<AuthenticatedRoute element={Home} />} />
           <Route path="/publication" element={<AuthenticatedRoute element={Publication} />} />
@@ -204,7 +256,6 @@ function App() {
           <Route path="/post/:id" element={<AuthenticatedRoute element={SinglePost} />} />
           <Route path="/forums/:id" element={<AuthenticatedRoute element={SingleForum} />} />
           <Route path="/profile" element={<AuthenticatedRoute element={Profile} />} />
-
 
           {/* Ruta protegida para admin */}
           <Route path="/posts-to-validate" element={<AdminRoute element={PostListToValidate} />} />
@@ -260,7 +311,7 @@ function Root() {
       <div>
         <h1 style={{ fontSize: '4rem' }}>Papers Please</h1>
         <h2>Bienvenido a nuestra aplicación.</h2>
-        
+
         <div style={buttonContainerStyle}>
           <DefaultButton
             type="button"
@@ -273,7 +324,7 @@ function Root() {
             content='Ir al Registro'
             destination="/register"
           />
-        </div>    
+        </div>
       </div>
     </RootContainer>
   );
