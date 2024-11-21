@@ -629,10 +629,18 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
             return res.status(403).json({ error: 'Not authorized to update this post' });
         }
 
+        // Parse tags if they are sent as a JSON string
+        let tagsArray;
+        try {
+            tagsArray = JSON.parse(tags);
+        } catch (error) {
+            return res.status(400).json({ error: 'Invalid tags format' });
+        }
+
         // Calcular el valor de tags; si `tags` está vacío o no se envía, `tagsValue` será 0
         let tagsValue = 0;
-        if (Array.isArray(tags) && tags.length > 0) {
-            const tagIds = tags.map(tagId => parseInt(tagId));
+        if (Array.isArray(tagsArray) && tagsArray.length > 0) {
+            const tagIds = tagsArray.map(tagId => parseInt(tagId));
             const query = `SELECT id FROM tags WHERE id IN (${tagIds.join(',')})`;
             db.all(query, [], (err, rows) => {
                 if (err) {
