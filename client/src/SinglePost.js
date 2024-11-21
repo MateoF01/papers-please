@@ -341,30 +341,59 @@ export default function SinglePost() {
       alert('You have already submitted a review for this post.');
       return;
     }
-    try {
-      const response = await axios.post(`${backendUrl}/api/posts/${id}/reviews`, {
-        rating: userRating,
-        comment: userComment
-      }, {
-        withCredentials: true
-      });
-      const newReview = {
-        ...response.data,
-        user_name: currentUser.user_name
-      };
-      setReviews([newReview, ...reviews]);
-      setUserRating(0);
-      setUserComment('');
-      setHasUserReviewed(true);
-    } catch (err) {
-      console.error('Error submitting review:', err);
+  
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Vas a enviar esta reseña.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, enviar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        const response = await axios.post(`${backendUrl}/api/posts/${id}/reviews`, {
+          rating: userRating,
+          comment: userComment
+        }, {
+          withCredentials: true
+        });
+        const newReview = {
+          ...response.data,
+          user_name: currentUser.user_name
+        };
+        setReviews([newReview, ...reviews]);
+        setUserRating(0);
+        setUserComment('');
+        setHasUserReviewed(true);
+        Swal.fire('Enviado', 'Tu reseña ha sido enviada.', 'success');
+      } catch (err) {
+        console.error('Error submitting review:', err);
+        Swal.fire('Error', 'Error al enviar la reseña. Por favor, inténtalo de nuevo.', 'error');
+      }
     }
   };
 
-  const handleEditReview = (review) => {
-    setEditingReviewId(review.id);
-    setEditedRating(review.rating);
-    setEditedComment(review.comment);
+  const handleEditReview = async (review) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Vas a editar esta reseña.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, editar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
+      setEditingReviewId(review.id);
+      setEditedRating(review.rating);
+      setEditedComment(review.comment);
+    }
   };
 
   const handleSaveReview = async (reviewId) => {
@@ -404,6 +433,7 @@ export default function SinglePost() {
         });
         Swal.fire('Eliminado', 'La reseña ha sido eliminada.', 'success');
         setReviews(reviews.filter((review) => review.id !== reviewId));
+        window.location.reload(); // Refresh the page
       } catch (err) {
         console.error('Error deleting review:', err);
         Swal.fire('Error', 'Error al eliminar la reseña.', 'error');

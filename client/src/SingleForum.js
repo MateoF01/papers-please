@@ -129,33 +129,49 @@ function SingleForum() {
     fetchData();
   }, [id]);
 
-  const handleAddComment = (e) => {
+  const handleAddComment = async (e) => {
     e.preventDefault();
     setLoading(true);
-    axios.post(`${backendUrl}/api/forums/${id}/comments`, { comment: newComment }, { withCredentials: true })
-      .then(response => {
-        setComments([...comments, response.data]);
-        setNewComment('');
-      })
-      .catch(error => {
-        setError('Error al agregar el comentario.');
-      })
-      .finally(() => {
-        setLoading(false);
-        window.location.reload();
+  
+    try {
+      const response = await axios.post(`${backendUrl}/api/forums/${id}/comments`, { comment: newComment }, { withCredentials: true });
+      setComments([...comments, response.data]);
+      setNewComment('');
+      Swal.fire('Publicado', 'El comentario fue publicado.', 'success').then(() => {
+        window.location.reload(); // Reload the page after pressing OK
       });
-    
+    } catch (error) {
+      setError('Error al agregar el comentario.');
+      Swal.fire('Error', 'Error al agregar el comentario.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditForum = () => {
-    axios.put(`${backendUrl}/api/forums/${id}`, { title: forumTitle, body: forumBody }, { withCredentials: true })
-      .then(() => {
-        setEditingForum(false);
-        setForum(prev => ({ ...prev, title: forumTitle, body: forumBody }));
-      })
-      .catch(error => {
-        setError('Error al actualizar el foro.');
-      });
+  const handleEditForum = async () => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Vas a editar este foro. Los cambios deberán ser validados por un moderador.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, editar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
+      axios.put(`${backendUrl}/api/forums/${id}`, { title: forumTitle, body: forumBody }, { withCredentials: true })
+        .then(() => {
+          setEditingForum(false);
+          setForum(prev => ({ ...prev, title: forumTitle, body: forumBody }));
+          Swal.fire('Editado', 'El foro ha sido actualizado.', 'success');
+        })
+        .catch(error => {
+          setError('Error al actualizar el foro.');
+          Swal.fire('Error', 'Error al actualizar el foro.', 'error');
+        });
+    }
   };
 
   const handleDeleteForum = async () => {
@@ -182,15 +198,30 @@ function SingleForum() {
     }
   };
 
-  const handleEditComment = (commentId, updatedComment) => {
-    axios.put(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { body: updatedComment }, { withCredentials: true })
-      .then(() => {
-        setComments(comments.map(comment => comment.id === commentId ? { ...comment, body: updatedComment } : comment));
-        setEditingCommentId(null);
-      })
-      .catch(error => {
-        setError('Error al actualizar el comentario.');
-      });
+  const handleEditComment = async (commentId, updatedComment) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Vas a editar este comentario.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, editar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
+      axios.put(`${backendUrl}/api/forums/${id}/comments/${commentId}`, { body: updatedComment }, { withCredentials: true })
+        .then(() => {
+          setComments(comments.map(comment => comment.id === commentId ? { ...comment, body: updatedComment } : comment));
+          setEditingCommentId(null);
+          Swal.fire('Editado', 'El comentario ha sido actualizado.', 'success');
+        })
+        .catch(error => {
+          setError('Error al actualizar el comentario.');
+          Swal.fire('Error', 'Error al actualizar el comentario.', 'error');
+        });
+    }
   };
 
   const handleDeleteComment = async (commentId) => {
