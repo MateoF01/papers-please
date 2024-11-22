@@ -16,6 +16,7 @@ function Publication() {
   const [error, setError] = useState(null);
   const [tags, setTags] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
+  const [recommendedTag, setRecommendedTag] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -85,6 +86,22 @@ function Publication() {
 
   const handleImageChange = (e) => {
     setImage(e.target.files[0]); 
+  };
+
+  const handleRecommendTag = async () => {
+    if (!recommendedTag) {
+      Swal.fire('Error', 'Por favor, ingresa una etiqueta recomendada.', 'error');
+      return;
+    }
+
+    try {
+      await axios.post(`${backendUrl}/api/recommended-tags`, { tag: recommendedTag }, { withCredentials: true });
+      Swal.fire('Recomendado', 'Tu etiqueta recomendada ha sido enviada.', 'success');
+      setRecommendedTag('');
+    } catch (error) {
+      console.error('Error recommending tag:', error);
+      Swal.fire('Error', 'Error al enviar la etiqueta recomendada. Por favor, inténtalo de nuevo.', 'error');
+    }
   };
 
   const PublicationStyle = {
@@ -175,6 +192,21 @@ function Publication() {
           </div>
         </form>
         {error && <p style={{color: 'red', textAlign: 'center', marginTop: '10px'}}>{error}</p>}
+        <div style={{ marginTop: '20px' }}>
+          <h2 style={{ textAlign: 'center', color: '#333' }}>Recomendar Tag</h2>
+          <input
+            type="text"
+            value={recommendedTag}
+            onChange={(e) => setRecommendedTag(e.target.value)}
+            placeholder="Tag recomendado"
+            style={InputStyle}
+          />
+          <DefaultButton
+            type="button"
+            handleClick={handleRecommendTag}
+            content="Recomendar"
+          />
+        </div>
       </div>
     </div>
   );
