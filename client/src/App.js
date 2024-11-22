@@ -19,7 +19,9 @@ import AdminRoute from './components/routes/AdminRoute';
 import AuthenticatedRoute from './components/routes/AuthenticatedRoute';
 import Profile from './Profile';
 import Bot from './Bot';
+import ChatBot from './PopupBot';
 import { AuthContext, AuthProvider } from './assets/AuthContext';
+import { FaRobot } from 'react-icons/fa';
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
@@ -157,6 +159,26 @@ const LogoutButton = styled.button`
   }
 `;
 
+
+const ChatBotButton = styled.button`
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #A1DA39;
+  color: white;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+`;
+
 const buttonContainerStyle = {
   display: 'flex',
   flexDirection: 'column',
@@ -235,6 +257,7 @@ function NavbarContent() {
 }
 
 function App() {
+  const [isChatBotOpen, setIsChatBotOpen] = useState(false);
   return (
     <AuthProvider>
       <Router basename='/papers-please'>
@@ -262,6 +285,10 @@ function App() {
           <Route path="/bot" element={<AuthenticatedRoute element={Bot} />} />
           <Route path="/" element={<Root />} />
         </Routes>
+        <ChatBotButton onClick={() => setIsChatBotOpen(!isChatBotOpen)}>
+          <FaRobot />
+        </ChatBotButton>
+        <ChatBot isOpen={isChatBotOpen} onClose={setIsChatBotOpen} />
       </Router>
     </AuthProvider>
   );
