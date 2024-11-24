@@ -135,6 +135,64 @@ const StyledLink = styled(Link)`
   }
 `;
 
+const TagList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+`;
+
+const TagItem = styled.div`
+  background-color: #f0f0f0;
+  color: #333;
+  border-radius: 20px;
+  padding: 5px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #e0e0e0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+`;
+
+const TagName = styled.span`
+  margin-right: 10px;
+`;
+
+const DeleteTagButton = styled.button`
+  background-color: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 5px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+  }
+`;
+
+const RecommendedTagList = styled(TagList)``;
+
+const RecommendedTagItem = styled(TagItem)``;
+
+const RecommendedTagName = styled(TagName)``;
+
+const RecommendedTagButton = styled(DeleteTagButton)`
+  &:hover {
+    color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+  }
+`;
+
 export default function PostListToValidate() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -144,18 +202,21 @@ export default function PostListToValidate() {
   const [orderBy, setOrderBy] = useState('created_at');
   const [newTag, setNewTag] = useState('');
   const [tags, setTags] = useState([]);
+  const [recommendedTags, setRecommendedTags] = useState([]);
 
   useEffect(() => {
     const fetchPostsAndUser = async () => {
       try {
-        const [postsResponse, userResponse, tagsResponse] = await Promise.all([
+        const [postsResponse, userResponse, tagsResponse, recommendedTagsResponse] = await Promise.all([
           axios.get(`${backendUrl}/api/posts/to-validate`, {params: {orderBy, order: sortOrder}, withCredentials: true }),
           axios.get(`${backendUrl}/api/user`, { withCredentials: true }),
-          axios.get(`${backendUrl}/api/tags`)
+          axios.get(`${backendUrl}/api/tags`),
+          axios.get(`${backendUrl}/api/recommended-tags`, { withCredentials: true })
         ]);
         setPosts(postsResponse.data);
         setCurrentUser(userResponse.data);
         setTags(tagsResponse.data);
+        setRecommendedTags(recommendedTagsResponse.data);
         setLoading(false);
       } catch (err) {
         setError('Error loading data');
@@ -251,6 +312,78 @@ export default function PostListToValidate() {
       }})
   }
 
+  const handleAcceptTag = async (tagId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción aceptará la etiqueta recomendada.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, aceptar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.post(`${backendUrl}/api/recommended-tags/${tagId}/accept`, {}, { withCredentials: true });
+        setRecommendedTags(recommendedTags.filter(tag => tag.id !== tagId));
+        Swal.fire('Aceptado', 'La etiqueta recomendada ha sido aceptada y añadida.', 'success');
+      } catch (error) {
+        console.error('Error accepting recommended tag:', error);
+        Swal.fire('Error', 'Error al aceptar la etiqueta recomendada.', 'error');
+      }
+    }
+  };
+
+  const handleDenyTag = async (tagId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción denegará la etiqueta recomendada.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, denegar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/recommended-tags/${tagId}/deny`, { withCredentials: true });
+        setRecommendedTags(recommendedTags.filter(tag => tag.id !== tagId));
+        Swal.fire('Denegado', 'La etiqueta recomendada ha sido denegada y eliminada.', 'success');
+      } catch (error) {
+        console.error('Error denying recommended tag:', error);
+        Swal.fire('Error', 'Error al denegar la etiqueta recomendada.', 'error');
+      }
+    }
+  };
+
+  const handleDeleteTag = async (tagId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará la etiqueta.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/tags/${tagId}`, { withCredentials: true });
+        setTags(tags.filter(tag => tag.id !== tagId));
+        Swal.fire('Eliminado', 'La etiqueta ha sido eliminada.', 'success');
+      } catch (error) {
+        console.error('Error deleting tag:', error);
+        Swal.fire('Error', 'Error al eliminar la etiqueta.', 'error');
+      }
+    }
+  };
+
   const sortedPosts = [...posts];
 
   const renderTags = (postTags) => {
@@ -266,12 +399,12 @@ export default function PostListToValidate() {
       <PageContainer>
         <Container>
           <Header>
-          <SortButton onClick={() => handleOrderByChange2()}>
-            {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
-          </SortButton>
-          <SortButton onClick={handleSortChange}>
-            {sortOrder === 'DESC' ? '▼' : '▲'}
-          </SortButton>
+            <SortButton onClick={() => handleOrderByChange2()}>
+              {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
+            </SortButton>
+            <SortButton onClick={handleSortChange}>
+              {sortOrder === 'DESC' ? '▼' : '▲'}
+            </SortButton>
           </Header>
           <FormContainer>
             <form onSubmit={handleAddTag}>
@@ -320,8 +453,49 @@ export default function PostListToValidate() {
               </ButtonContainer>
             </Card>
           ))}
+          <Card>
+            <h2>Etiquetas Recomendadas</h2>
+            <RecommendedTagList>
+              {recommendedTags.map(tag => (
+                <RecommendedTagItem key={tag.id}>
+                  <RecommendedTagName>{tag.tag}</RecommendedTagName>
+                  <div>
+                    <RecommendedTagButton
+                      onClick={() => handleAcceptTag(tag.id)}
+                      aria-label={`Accept tag: ${tag.tag}`}
+                    >
+                      ✓
+                    </RecommendedTagButton>
+                    <RecommendedTagButton
+                      onClick={() => handleDenyTag(tag.id)}
+                      aria-label={`Deny tag: ${tag.tag}`}
+                    >
+                      ×
+                    </RecommendedTagButton>
+                  </div>
+                </RecommendedTagItem>
+              ))}
+            </RecommendedTagList>
+          </Card>
+          <Card>
+            <h2>Etiquetas Actuales</h2>
+            <TagList>
+              {tags.map(tag => (
+                <TagItem key={tag.id}>
+                  <TagName>{tag.name}</TagName>
+                  <DeleteTagButton 
+                    onClick={() => handleDeleteTag(tag.id)}
+                    aria-label={`Delete tag: ${tag.name}`}
+                  >
+                    ×
+                  </DeleteTagButton>
+                </TagItem>
+              ))}
+            </TagList>
+          </Card>
         </Container>
       </PageContainer>
     </>
   );
 }
+

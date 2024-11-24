@@ -629,10 +629,18 @@ app.put('/api/posts/:id', verificarAutenticacion, upload.single('image'), (req, 
             return res.status(403).json({ error: 'Not authorized to update this post' });
         }
 
+        // Parse tags if they are sent as a JSON string
+        let tagsArray;
+        try {
+            tagsArray = JSON.parse(tags);
+        } catch (error) {
+            return res.status(400).json({ error: 'Invalid tags format' });
+        }
+
         // Calcular el valor de tags; si `tags` está vacío o no se envía, `tagsValue` será 0
         let tagsValue = 0;
-        if (Array.isArray(tags) && tags.length > 0) {
-            const tagIds = tags.map(tagId => parseInt(tagId));
+        if (Array.isArray(tagsArray) && tagsArray.length > 0) {
+            const tagIds = tagsArray.map(tagId => parseInt(tagId));
             const query = `SELECT id FROM tags WHERE id IN (${tagIds.join(',')})`;
             db.all(query, [], (err, rows) => {
                 if (err) {
@@ -1135,6 +1143,93 @@ app.delete('/api/forums/:id/comments/:id', verificarAutenticacion, (req, res) =>
         });
     });
 });
+
+
+// Endpoint agregar tag recomendado
+app.post('/api/recommended-tags', verificarAutenticacion, (req, res) => {
+    const { tag } = req.body;
+    const userId = req.session.usuarioId;
+
+    if (!tag) {
+        return res.status(400).json({ error: 'Tag is required' });
+    }
+
+    const query = `INSERT INTO recommended_tags (user_id, tag) VALUES (?, ?)`;
+    db.run(query, [userId, tag], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Error adding recommended tag' });
+        }
+        res.json({ message: 'Recommended tag added successfully', tag: { id: this.lastID, user_id: userId, tag } });
+    });
+});
+
+// Endpoint get tags recomendados
+app.get('/api/recommended-tags', verificarAutenticacion, (req, res) => {
+    const query = `SELECT recommended_tags.*, users.user_name FROM recommended_tags JOIN users ON recommended_tags.user_id = users.id`;
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error fetching recommended tags' });
+        }
+        res.json(rows);
+    });
+});
+
+// Endpoint aceptar tag recomendado
+app.post('/api/recommended-tags/:id/accept', verificarAutenticacion, (req, res) => {
+    const { id } = req.params;
+
+    db.get('SELECT * FROM recommended_tags WHERE id = ?', [id], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error fetching recommended tag' });
+        }
+        if (!row) {
+            return res.status(404).json({ error: 'Recommended tag not found' });
+        }
+
+        const insertTagQuery = `INSERT INTO tags (name) VALUES (?)`;
+        db.run(insertTagQuery, [row.tag], function(err) {
+            if (err) {
+                return res.status(500).json({ error: 'Error adding tag' });
+            }
+
+            const deleteRecommendedTagQuery = `DELETE FROM recommended_tags WHERE id = ?`;
+            db.run(deleteRecommendedTagQuery, [id], function(err) {
+                if (err) {
+                    return res.status(500).json({ error: 'Error deleting recommended tag' });
+                }
+                res.json({ message: 'Tag accepted and added successfully' });
+            });
+        });
+    });
+});
+
+// Endpoint denegar tag recomendado
+app.delete('/api/recommended-tags/:id/deny', verificarAutenticacion, (req, res) => {
+    const { id } = req.params;
+
+    const query = `DELETE FROM recommended_tags WHERE id = ?`;
+    db.run(query, [id], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Error deleting recommended tag' });
+        }
+        res.json({ message: 'Recommended tag denied and deleted successfully' });
+    });
+});
+
+
+// Endpoint borrar tag
+app.delete('/api/tags/:id', verificarAutenticacion, (req, res) => {
+    const { id } = req.params;
+
+    const query = `DELETE FROM tags WHERE id = ?`;
+    db.run(query, [id], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Error deleting tag' });
+        }
+        res.json({ message: 'Tag deleted successfully' });
+    });
+});
+
 
 // Cierra la conexión a la base de datos al finalizar el servidor
 app.on('exit', () => {

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import DefaultButton from './components/button/DefaultButton';
 import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import BackgroundImage from './background.png';
+import Swal from 'sweetalert2';
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
@@ -14,31 +15,32 @@ function NewForum() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
+  
     // Crear objeto de datos
     const forumData = { title, body };
-
-    // Enviar solicitud POST
-    axios.post(`${backendUrl}/api/forums`, forumData, {
-      withCredentials: true, // Esto se usa si tu backend requiere sesiones de usuario o cookies
-      headers: {
-        'Content-Type': 'application/json', // Cambiar a 'application/json'
-      }
-    })
-      .then((response) => {
-        console.log('Forum created successfully:', response.data);
-        setLoading(false);
-        navigate('/forums');  // Redirige a la lista de foros
-      })
-      .catch((error) => {
-        setLoading(false);
-        console.error('Error creating forum:', error.response?.data || error.message);
-        setError(error.response?.data?.error || 'Error al crear el foro. Por favor, inténtalo de nuevo.');
+  
+    try {
+      const response = await axios.post(`${backendUrl}/api/forums`, forumData, {
+        withCredentials: true, // Esto se usa si tu backend requiere sesiones de usuario o cookies
+        headers: {
+          'Content-Type': 'application/json', // Cambiar a 'application/json'
+        }
       });
+  
+      console.log('Forum created successfully:', response.data);
+      setLoading(false);
+      await Swal.fire('Creado', 'El foro ha sido creado exitosamente.', 'success');
+      navigate('/forums');  // Redirige a la lista de foros
+    } catch (error) {
+      setLoading(false);
+      console.error('Error creating forum:', error.response?.data || error.message);
+      setError(error.response?.data?.error || 'Error al crear el foro. Por favor, inténtalo de nuevo.');
+      Swal.fire('Error', 'Error al crear el foro. Por favor, inténtalo de nuevo.', 'error');
+    }
   };
 
   const ForumStyle = {

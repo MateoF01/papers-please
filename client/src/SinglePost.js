@@ -160,6 +160,7 @@ export default function SinglePost() {
   const [editedTitle, setEditedTitle] = useState('');
   const [editedBody, setEditedBody] = useState('');
   const [tags, setTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
   const [editedImage, setEditedImage] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [errorDetails, setErrorDetails] = useState(null);
@@ -177,8 +178,8 @@ export default function SinglePost() {
   
 
   const handleTagChange = (e) => {
-    const selectedTags = Array.from(e.target.selectedOptions, option => option.value);    
-    setTags(selectedTags);
+    const selectedTags = Array.from(e.target.selectedOptions, option => option.value);
+    setSelectedTags(selectedTags);
   };
 
   useEffect(() => {
@@ -199,6 +200,7 @@ export default function SinglePost() {
         setCurrentUser(userResponse.data);
         setReviews(reviewsResponse.data);
         setTags(tagsResponse.data);
+        setSelectedTags(postResponse.data.tags.map(tag => tag.toString())); // Initialize selectedTags
   
         setHasUserReviewed(reviewsResponse.data.some(review => review.user_id === userResponse.data.id));
   
@@ -245,7 +247,7 @@ export default function SinglePost() {
       if (editedImage) {
         formData.append('image', editedImage);
       }
-      formData.append('tags', JSON.stringify(tags));
+      formData.append('tags', JSON.stringify(selectedTags)); // Ensure tags are sent as a JSON string
   
       await axios.put(`${backendUrl}/api/posts/${id}`, formData, {
         withCredentials: true,
@@ -258,7 +260,7 @@ export default function SinglePost() {
   
       setPost(response.data);
       setIsEditing(false);
-
+  
       // Show alert after successful edit
       await Swal.fire({
         title: 'Publicación actualizada',
@@ -277,10 +279,7 @@ export default function SinglePost() {
         confirmButtonText: 'OK'
       });
     }
-    //refresh
-    window.location.reload();
   };
-
 
   const handleDelete = async () => {
     const result = await Swal.fire({
@@ -342,30 +341,59 @@ export default function SinglePost() {
       alert('You have already submitted a review for this post.');
       return;
     }
-    try {
-      const response = await axios.post(`${backendUrl}/api/posts/${id}/reviews`, {
-        rating: userRating,
-        comment: userComment
-      }, {
-        withCredentials: true
-      });
-      const newReview = {
-        ...response.data,
-        user_name: currentUser.user_name
-      };
-      setReviews([newReview, ...reviews]);
-      setUserRating(0);
-      setUserComment('');
-      setHasUserReviewed(true);
-    } catch (err) {
-      console.error('Error submitting review:', err);
+  
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Vas a enviar esta reseña.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, enviar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        const response = await axios.post(`${backendUrl}/api/posts/${id}/reviews`, {
+          rating: userRating,
+          comment: userComment
+        }, {
+          withCredentials: true
+        });
+        const newReview = {
+          ...response.data,
+          user_name: currentUser.user_name
+        };
+        setReviews([newReview, ...reviews]);
+        setUserRating(0);
+        setUserComment('');
+        setHasUserReviewed(true);
+        Swal.fire('Enviado', 'Tu reseña ha sido enviada.', 'success');
+      } catch (err) {
+        console.error('Error submitting review:', err);
+        Swal.fire('Error', 'Error al enviar la reseña. Por favor, inténtalo de nuevo.', 'error');
+      }
     }
   };
 
-  const handleEditReview = (review) => {
-    setEditingReviewId(review.id);
-    setEditedRating(review.rating);
-    setEditedComment(review.comment);
+  const handleEditReview = async (review) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Vas a editar esta reseña.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, editar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (result.isConfirmed) {
+      setEditingReviewId(review.id);
+      setEditedRating(review.rating);
+      setEditedComment(review.comment);
+    }
   };
 
   const handleSaveReview = async (reviewId) => {
@@ -405,6 +433,7 @@ export default function SinglePost() {
         });
         Swal.fire('Eliminado', 'La reseña ha sido eliminada.', 'success');
         setReviews(reviews.filter((review) => review.id !== reviewId));
+        window.location.reload(); // Refresh the page
       } catch (err) {
         console.error('Error deleting review:', err);
         Swal.fire('Error', 'Error al eliminar la reseña.', 'error');
@@ -482,31 +511,25 @@ export default function SinglePost() {
                 type="text"
                 value={editedTitle}
                 onChange={(e) => setEditedTitle(e.target.value)}
+                placeholder="Título"
+                required
               />
               <Textarea
                 value={editedBody}
                 onChange={(e) => setEditedBody(e.target.value)}
+                placeholder="Contenido"
+                required
               />
-
-
               <Input
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
               />
-
-              <select multiple onChange={handleTagChange} style={InputStyle}>
-                  <option value="0">Matemática</option>
-                  <option value="1">Ciencia</option>
-                  <option value="2">Filosofía</option>
-                  <option value="3">Historia</option>
-                  <option value="4">Literatura</option>
-                  <option value="5">Tecnología</option>
-                  <option value="6">Arte</option>
-                  <option value="7">Política</option>
-                  <option value="8">Economía</option>
-                  <option value="9">Psicología</option>
-                </select>
+              <select multiple value={selectedTags} onChange={handleTagChange} style={InputStyle}>
+                {tags.map(tag => (
+                  <option key={tag.id} value={tag.id}>{tag.name}</option>
+                ))}
+              </select>
               <div>
                 <Button type="submit" className="edit">Guardar</Button>
                 <Button type="button" onClick={() => setIsEditing(false)}>Cancelar</Button>
@@ -517,9 +540,7 @@ export default function SinglePost() {
               <PostTitle>{post.title}</PostTitle>
               <PostMeta>
                 Por {renderAuthorName()} • {new Date(post.created_at).toLocaleDateString()} • {renderTags(post.tags)}
-
               </PostMeta>
-
               {post.image && <PostImage src={`${backendUrl}${post.image}`} alt="Imagen de la publicación" />}
               <PostBody>{post.body}</PostBody>
               <div style={{ marginTop: '20px' }}>
@@ -527,7 +548,6 @@ export default function SinglePost() {
                 {canValidate && <Button className="validate" onClick={handleValidate}>Validar</Button>}
                 {canDelete && <Button className="delete" onClick={handleDelete}>Eliminar</Button>}
               </div>
-
               {post.validated === 1 && (
                 <ReviewSection>
                   <h2>Reseñas</h2>
