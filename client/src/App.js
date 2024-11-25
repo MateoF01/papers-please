@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import styled from 'styled-components';
+import { FaRobot } from 'react-icons/fa';
+import { AlertCircle, Bell, Tag } from 'lucide-react';
+
 import Register from './Register';
 import Login from './Login';
 import Home from './Home';
@@ -10,9 +14,6 @@ import NewForum from './NewForum';
 import ForumList from './ForumList';
 import SingleForum from './SingleForum';
 import SinglePost from './SinglePost';
-import backgroundImage from './background.png';
-import styled from 'styled-components';
-import DefaultButton from './components/button/DefaultButton';
 import MyPosts from './MyPosts';
 import PostListToValidate from './PostListToValidate';
 import AdminRoute from './components/routes/AdminRoute';
@@ -21,7 +22,8 @@ import Profile from './Profile';
 import Bot from './Bot';
 import ChatBot from './PopupBot';
 import { AuthContext, AuthProvider } from './assets/AuthContext';
-import { FaRobot } from 'react-icons/fa';
+import DefaultButton from './components/button/DefaultButton';
+import backgroundImage from './background.png';
 
 const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
@@ -84,9 +86,7 @@ const NavbarButton = styled.button`
     background-color: rgba(255, 255, 255, 0.1);
   }
 
-  ${({ hasUnvalidatedPosts }) =>
-    hasUnvalidatedPosts &&
-    `
+  ${({ hasUnvalidatedContent }) => hasUnvalidatedContent && `
     &::after {
       content: '';
       position: absolute;
@@ -98,24 +98,24 @@ const NavbarButton = styled.button`
       border-radius: 50%;
       animation: pulse 1.5s infinite;
     }
-
-    @keyframes pulse {
-      0% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
-      }
-      
-      70% {
-        transform: scale(1);
-        box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
-      }
-      
-      100% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
-      }
-    }
   `}
+
+  @keyframes pulse {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7);
+    }
+    
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+    }
+    
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+    }
+  }
 `;
 
 const DropdownMenu = styled.div`
@@ -159,7 +159,6 @@ const LogoutButton = styled.button`
   }
 `;
 
-
 const ChatBotButton = styled.button`
   position: fixed;
   bottom: 20px;
@@ -179,16 +178,113 @@ const ChatBotButton = styled.button`
   z-index: 1000;
 `;
 
+const PopoverContent = styled.div`
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  z-index: 1000;
+  width: 300px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+
+  &.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 20px;
+    width: 12px;
+    height: 12px;
+    background-color: white;
+    transform: rotate(45deg);
+  }
+`;
+
+
+const PopoverList = styled.ul`
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const PopoverListItem = styled.li`
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  color: #333;
+  font-size: 1rem;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #e0e0e0;
+  }
+`;
+
+const PopoverIcon = styled.span`
+  margin-right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: #f0f0f0;
+  border-radius: 50%;
+`;
+
 const buttonContainerStyle = {
   display: 'flex',
   flexDirection: 'column',
   gap: '30px',
 };
 
+function Popover({ children, content }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const popoverRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={popoverRef} style={{ position: 'relative' }}>
+      <div
+        onMouseEnter={() => setIsOpen(true)}
+        onMouseLeave={() => setIsOpen(false)}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+      >
+        {children}
+      </div>
+      <PopoverContent className={isOpen ? 'active' : ''} role="tooltip">
+        {content}
+      </PopoverContent>
+    </div>
+  );
+}
+
 function NavbarContent() {
   const { isAuthenticated, isAdmin, handleLogout, checkAuthentication } = useContext(AuthContext);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [hasUnvalidatedPosts, setHasUnvalidatedPosts] = useState(false);
+  const [hasUnvalidatedContent, setHasUnvalidatedContent] = useState(false);
+  const [unvalidatedPostsCount, setUnvalidatedPostsCount] = useState(0);
+  const [unvalidatedTagsCount, setUnvalidatedTagsCount] = useState(0);
   const navigate = useNavigate();
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
@@ -207,19 +303,24 @@ function NavbarContent() {
   }, [isAuthenticated, isAdmin, checkAuthentication]);
 
   useEffect(() => {
-    const checkUnvalidatedPosts = async () => {
-      try {
-        const response = await axios.get(`${backendUrl}/api/posts/to-validate`, { withCredentials: true });
-        const unvalidatedPosts = response.data.some(post => post.validated === 0);
-        setHasUnvalidatedPosts(unvalidatedPosts);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
+    const checkUnvalidatedContent = async () => {
+      if (isAdmin) {
+        try {
+          const postsResponse = await axios.get(`${backendUrl}/api/posts/to-validate`, { withCredentials: true });
+          const unvalidatedPosts = postsResponse.data.filter(post => post.validated === 0);
+          setUnvalidatedPostsCount(unvalidatedPosts.length);
+
+          const tagsResponse = await axios.get(`${backendUrl}/api/recommended-tags`, { withCredentials: true });
+          setUnvalidatedTagsCount(tagsResponse.data.length);
+
+          setHasUnvalidatedContent(unvalidatedPosts.length > 0 || tagsResponse.data.length > 0);
+        } catch (error) {
+          console.error('Error fetching unvalidated content:', error);
+        }
       }
     };
 
-    if (isAdmin) {
-      checkUnvalidatedPosts();
-    }
+    checkUnvalidatedContent();
   }, [isAdmin]);
 
   return (
@@ -236,9 +337,29 @@ function NavbarContent() {
             <NavbarButton onClick={() => navigate('/bot')}>Asistente</NavbarButton>
             <NavbarButton onClick={() => navigate('/forums')}>Foros</NavbarButton>
             {isAdmin === 1 && (
-              <NavbarButton onClick={() => navigate('/posts-to-validate')} hasUnvalidatedPosts={hasUnvalidatedPosts}>
-                Validar Publicaciones
-              </NavbarButton>
+              <Popover
+                content={
+                  <>
+                    <PopoverList>
+                      <PopoverListItem>
+                        <PopoverIcon><AlertCircle size={16} /></PopoverIcon>
+                        <span>Posts sin validar: {unvalidatedPostsCount}</span>
+                      </PopoverListItem>
+                      <PopoverListItem>
+                        <PopoverIcon><Tag size={16} /></PopoverIcon>
+                        <span>Tags sin validar: {unvalidatedTagsCount}</span>
+                      </PopoverListItem>
+                    </PopoverList>
+                  </>
+                }
+              >
+                <NavbarButton
+                  hasUnvalidatedContent={hasUnvalidatedContent}
+                  onClick={() => navigate('/posts-to-validate')}
+                >
+                  Validar Publicaciones
+                </NavbarButton>
+              </Popover>
             )}
             <LogoutButton onClick={handleLogoutClick}>Cerrar Sesión</LogoutButton>
           </>
@@ -286,7 +407,8 @@ function App() {
           <Route path="/" element={<Root />} />
         </Routes>
         <ChatBotButton onClick={() => setIsChatBotOpen(!isChatBotOpen)}>
-          <FaRobot />
+          
+<FaRobot />
         </ChatBotButton>
         <ChatBot isOpen={isChatBotOpen} onClose={setIsChatBotOpen} />
       </Router>
@@ -358,3 +480,4 @@ function Root() {
 }
 
 export default App;
+

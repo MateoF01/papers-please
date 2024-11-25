@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import styled, { keyframes } from 'styled-components';
-import { FaTimes, FaRobot } from 'react-icons/fa';
+import { FaTimes} from 'react-icons/fa';
 import { IoSend } from 'react-icons/io5';
 import TailSpin from 'react-loading-icons/dist/esm/components/tail-spin';
 import { Formik, Form, Field } from "formik";
