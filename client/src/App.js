@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Link, useNavigate } from 'react
 import axios from 'axios';
 import styled from 'styled-components';
 import { FaRobot } from 'react-icons/fa';
-import { AlertCircle, Bell, Tag } from 'lucide-react';
+import { AlertCircle, Bell, Tag, MessageSquare } from 'lucide-react';
 
 import Register from './Register';
 import Login from './Login';
@@ -285,6 +285,7 @@ function NavbarContent() {
   const [hasUnvalidatedContent, setHasUnvalidatedContent] = useState(false);
   const [unvalidatedPostsCount, setUnvalidatedPostsCount] = useState(0);
   const [unvalidatedTagsCount, setUnvalidatedTagsCount] = useState(0);
+  const [unvalidatedReviewsCount, setUnvalidatedReviewsCount] = useState(0);
   const navigate = useNavigate();
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
@@ -306,14 +307,22 @@ function NavbarContent() {
     const checkUnvalidatedContent = async () => {
       if (isAdmin) {
         try {
-          const postsResponse = await axios.get(`${backendUrl}/api/posts/to-validate`, { withCredentials: true });
+          const [postsResponse, tagsResponse, reviewsResponse] = await Promise.all([
+            axios.get(`${backendUrl}/api/posts/to-validate`, { withCredentials: true }),
+            axios.get(`${backendUrl}/api/recommended-tags`, { withCredentials: true }),
+            axios.get(`${backendUrl}/api/reviews/unvalidated`, { withCredentials: true })
+          ]);
+
           const unvalidatedPosts = postsResponse.data.filter(post => post.validated === 0);
           setUnvalidatedPostsCount(unvalidatedPosts.length);
-
-          const tagsResponse = await axios.get(`${backendUrl}/api/recommended-tags`, { withCredentials: true });
           setUnvalidatedTagsCount(tagsResponse.data.length);
+          setUnvalidatedReviewsCount(reviewsResponse.data.length);
 
-          setHasUnvalidatedContent(unvalidatedPosts.length > 0 || tagsResponse.data.length > 0);
+          setHasUnvalidatedContent(
+            unvalidatedPosts.length > 0 || 
+            tagsResponse.data.length > 0 || 
+            reviewsResponse.data.length > 0
+          );
         } catch (error) {
           console.error('Error fetching unvalidated content:', error);
         }
@@ -349,6 +358,10 @@ function NavbarContent() {
                         <PopoverIcon><Tag size={16} /></PopoverIcon>
                         <span>Tags sin validar: {unvalidatedTagsCount}</span>
                       </PopoverListItem>
+                      <PopoverListItem>
+                        <PopoverIcon><MessageSquare size={16} /></PopoverIcon>
+                        <span>Reseñas sin validar: {unvalidatedReviewsCount}</span>
+                      </PopoverListItem>
                     </PopoverList>
                   </>
                 }
@@ -357,7 +370,7 @@ function NavbarContent() {
                   hasUnvalidatedContent={hasUnvalidatedContent}
                   onClick={() => navigate('/posts-to-validate')}
                 >
-                  Validar Publicaciones
+                  Validar Contenido
                 </NavbarButton>
               </Popover>
             )}

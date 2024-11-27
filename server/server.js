@@ -823,6 +823,57 @@ app.put('/api/reviews/:reviewId', verificarAutenticacion, [
       });
     });
   });
+
+  // Endpoint get reseñas no validadas
+app.get('/api/reviews/unvalidated', verificarAutenticacion, (req, res) => {
+    const query = `SELECT reviews.*, users.user_name, posts.title AS post_title FROM reviews 
+                   JOIN users ON reviews.user_id = users.id 
+                   JOIN posts ON reviews.post_id = posts.id 
+                   WHERE reviews.validated = 0`;
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: 'Error fetching unvalidated reviews' });
+        }
+        res.json(rows);
+    });
+});
+
+// Endpoint validar reseña
+app.put('/api/reviews/:id/validate', verificarAutenticacion, (req, res) => {
+    const { id } = req.params;
+    const query = `UPDATE reviews SET validated = 1 WHERE id = ?`;
+    db.run(query, [id], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Error validating review' });
+        }
+        res.json({ message: 'Review validated successfully' });
+    });
+});
+
+
+// Endpoint invalidar reseña
+app.put('/api/reviews/:id/unvalidate', verificarAutenticacion, (req, res) => {
+    const { id } = req.params;
+    const query = `UPDATE reviews SET validated = 0 WHERE id = ?`;
+    db.run(query, [id], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Error unvalidating review' });
+        }
+        res.json({ message: 'Review unvalidated successfully' });
+    });
+});
+
+// Endpoint denergar reseña
+app.delete('/api/reviews/:id/deny', verificarAutenticacion, (req, res) => {
+    const { id } = req.params;
+    const query = `DELETE FROM reviews WHERE id = ?`;
+    db.run(query, [id], function(err) {
+        if (err) {
+            return res.status(500).json({ error: 'Error denying review' });
+        }
+        res.json({ message: 'Review denied and deleted successfully' });
+    });
+});
   
   // borrar reseña
   app.delete('/api/reviews/:reviewId', verificarAutenticacion, (req, res) => {

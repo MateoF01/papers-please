@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import styled from 'styled-components';
 import Swal from 'sweetalert2';
+import { AlertCircle, Check, X, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import backgroundImage from './background.png';
-
-const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
 const RootContainer = styled.div`
   background-image: url(${backgroundImage});
@@ -14,10 +13,6 @@ const RootContainer = styled.div`
   background-attachment: fixed;
   min-height: 100vh;
   width: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: -1;
 `;
 
 const PageContainer = styled.div`
@@ -25,44 +20,67 @@ const PageContainer = styled.div`
   justify-content: center;
   align-items: flex-start;
   min-height: 100vh;
-  padding-top: 80px;
-  position: relative;
-  z-index: 1;
+  padding: 80px 20px;
 `;
 
 const Container = styled.div`
   width: 100%;
   max-width: 800px;
-  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 `;
 
 const Header = styled.div`
   display: flex;
-  justify-content: flex-end;
-  margin-bottom: 15px;
-`;
-
-const SortButton = styled.button`
-  background: white;
-  border: none;
-  color: #666;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 10px;
-  border-radius: 5px;
-  margin-left: 10px;
-`;
-
-const FormContainer = styled.div`
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
 `;
 
+const Title = styled.h1`
+  font-size: 2rem;
+  color: #333;
+  margin: 0;
+`;
+
+const SortButton = styled.button`
+  background: #f0f0f0;
+  border: none;
+  color: #333;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #e0e0e0;
+  }
+
+  svg {
+    margin-left: 5px;
+  }
+`;
+
+const FormContainer = styled.div`
+  margin-bottom: 30px;
+`;
+
+const Form = styled.form`
+  display: flex;
+  gap: 10px;
+`;
+
 const Input = styled.input`
+  flex-grow: 1;
   padding: 10px;
   font-size: 1rem;
   border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-right: 10px;
+  border-radius: 4px;
 `;
 
 const Button = styled.button`
@@ -71,66 +89,98 @@ const Button = styled.button`
   background-color: #4CAF50;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #45a049;
+  }
 `;
 
 const Card = styled.div`
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: white;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(5px);
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
 `;
 
-const Title = styled.h2`
+const CardTitle = styled.h2`
   margin: 0 0 10px 0;
   color: #333;
+  font-size: 1.5rem;
 `;
 
 const Meta = styled.div`
   color: #666;
   font-size: 0.9em;
   margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 `;
 
 const ButtonContainer = styled.div`
   display: flex;
   justify-content: flex-start;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 15px;
 `;
 
-const ValidateButton = styled(Button)`
+const ActionButton = styled(Button)`
+  padding: 8px 15px;
+  font-size: 0.9rem;
+`;
+
+const ValidateButton = styled(ActionButton)`
   background-color: #28a745;
-  color: white;
+
+  &:hover {
+    background-color: #218838;
+  }
 `;
 
-const DeleteButton = styled(Button)`
+const DeleteButton = styled(ActionButton)`
   background-color: #dc3545;
-  color: white;
+
+  &:hover {
+    background-color: #c82333;
+  }
 `;
 
 const Error = styled.div`
   color: #dc3545;
   padding: 10px;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: #f8d7da;
   border-radius: 4px;
-  backdrop-filter: blur(5px);
+  margin-bottom: 20px;
 `;
 
 const ValidationMessage = styled.div`
-  color: #dc3545;
-  font-weight: bold;
+  color: #856404;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  padding: 10px;
   margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 `;
 
 const StyledLink = styled(Link)`
   text-decoration: none;
-  color: inherit;
+  color: #007bff;
+  transition: color 0.3s ease;
 
   &:hover {
+    color: #0056b3;
     text-decoration: underline;
   }
 `;
@@ -138,63 +188,81 @@ const StyledLink = styled(Link)`
 const TagList = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 15px;
 `;
 
 const TagItem = styled.div`
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: #e9ecef;
+  color: #495057;
   border-radius: 20px;
-  padding: 5px 15px;
+  padding: 5px 12px;
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: all 0.3s ease;
-
-  &:hover {
-    background-color: #e0e0e0;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-  }
+  gap: 5px;
 `;
 
-const TagName = styled.span`
-  margin-right: 10px;
-`;
+const TagName = styled.span``;
 
 const DeleteTagButton = styled.button`
   background-color: transparent;
   border: none;
-  color: #666;
+  color: #6c757d;
   cursor: pointer;
   font-size: 1rem;
-  padding: 2px 5px;
-  border-radius: 50%;
-  transition: all 0.3s ease;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.3s ease;
 
   &:hover {
     color: #dc3545;
-    background-color: rgba(220, 53, 69, 0.1);
   }
 `;
 
-const RecommendedTagList = styled(TagList)``;
+const ReviewCard = styled(Card)`
+  background-color: #f8f9fa;
+`;
 
-const RecommendedTagItem = styled(TagItem)``;
+const ReviewContent = styled.p`
+  margin: 10px 0;
+  font-style: italic;
+`;
 
-const RecommendedTagName = styled(TagName)``;
+const ReviewRating = styled.span`
+  font-weight: bold;
+  color: #f39c12;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+`;
 
-const RecommendedTagButton = styled(DeleteTagButton)`
+const SectionTitle = styled.h2`
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 10px;
+`;
+
+
+const StyledCheck = styled(Check)`
   &:hover {
-    color: #28a745;
-    background-color: rgba(40, 167, 69, 0.1);
+    color: green;
   }
 `;
+
+const TagButtonContainer = styled.div`
+  display: flex;
+  gap: 8px; /* Adjust the gap between buttons as needed */
+`;
+
+const backendUrl = process.env.REACT_APP_PRODUCTION_FLAG === 'true' ? process.env.REACT_APP_RUTA_BACK : process.env.REACT_APP_RUTA_LOCAL;
 
 export default function PostListToValidate() {
   const [posts, setPosts] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sortOrder, setSortOrder] = useState('desc');
@@ -205,18 +273,20 @@ export default function PostListToValidate() {
   const [recommendedTags, setRecommendedTags] = useState([]);
 
   useEffect(() => {
-    const fetchPostsAndUser = async () => {
+    const fetchData = async () => {
       try {
-        const [postsResponse, userResponse, tagsResponse, recommendedTagsResponse] = await Promise.all([
+        const [postsResponse, userResponse, tagsResponse, recommendedTagsResponse, reviewsResponse] = await Promise.all([
           axios.get(`${backendUrl}/api/posts/to-validate`, {params: {orderBy, order: sortOrder}, withCredentials: true }),
           axios.get(`${backendUrl}/api/user`, { withCredentials: true }),
           axios.get(`${backendUrl}/api/tags`),
-          axios.get(`${backendUrl}/api/recommended-tags`, { withCredentials: true })
+          axios.get(`${backendUrl}/api/recommended-tags`, { withCredentials: true }),
+          axios.get(`${backendUrl}/api/reviews/unvalidated`, { withCredentials: true })
         ]);
         setPosts(postsResponse.data);
         setCurrentUser(userResponse.data);
         setTags(tagsResponse.data);
         setRecommendedTags(recommendedTagsResponse.data);
+        setReviews(reviewsResponse.data);
         setLoading(false);
       } catch (err) {
         setError('Error loading data');
@@ -224,11 +294,12 @@ export default function PostListToValidate() {
       }
     };
 
-    fetchPostsAndUser();
+    fetchData();
   }, [orderBy, sortOrder]);
 
   const handleAddTag = async (e) => {
     e.preventDefault();
+    if (!newTag.trim()) return;
 
     const result = await Swal.fire({
       title: '¿Estás seguro?',
@@ -285,15 +356,31 @@ export default function PostListToValidate() {
       setError('User information not available');
       return;
     }
-    try {
-      await axios.delete(`${backendUrl}/api/posts/${postId}`, {
-        withCredentials: true,
-        data: { isAdmin: currentUser.isAdmin }
-      });
-      setPosts(posts.filter(post => post.id !== postId));
-    } catch (err) {
-      console.error("Error deleting the post", err);
-      setError('Error deleting the post: ' + (err.response?.data?.error || err.message));
+
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará la publicación permanentemente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/posts/${postId}`, {
+          withCredentials: true,
+          data: { isAdmin: currentUser.isAdmin }
+        });
+        setPosts(posts.filter(post => post.id !== postId));
+        Swal.fire('Eliminado', 'La publicación ha sido eliminada.', 'success');
+      } catch (err) {
+        console.error("Error deleting the post", err);
+        setError('Error deleting the post: ' + (err.response?.data?.error || err.message));
+        Swal.fire('Error', 'Error al eliminar la publicación.', 'error');
+      }
     }
   };
 
@@ -301,16 +388,13 @@ export default function PostListToValidate() {
     setSortOrder(prevOrder => (prevOrder === 'ASC' ? 'DESC' : 'ASC'));
   };
 
-  const handleOrderByChange2 = () => {
+  const handleOrderByChange = () => {
     setOrderBy(prevOrder => {
-      if (prevOrder === 'created_at'){
-        return 'title'
-      } else if (prevOrder === "title"){
-        return 'user_name'
-      } else{
-        return 'created_at'
-      }})
-  }
+      if (prevOrder === 'created_at') return 'title';
+      if (prevOrder === 'title') return 'user_name';
+      return 'created_at';
+    });
+  };
 
   const handleAcceptTag = async (tagId) => {
     const result = await Swal.fire({
@@ -384,118 +468,225 @@ export default function PostListToValidate() {
     }
   };
 
-  const sortedPosts = [...posts];
+  const handleValidateReview = async (reviewId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción validará la reseña.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, validar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.put(`${backendUrl}/api/reviews/${reviewId}/validate`, {}, {
+          withCredentials: true
+        });
+        setReviews(reviews.filter(review => review.id !== reviewId));
+        Swal.fire('Validado', 'La reseña ha sido validada.', 'success');
+      } catch (err) {
+        console.error("Error validating the review", err);
+        Swal.fire('Error', 'Error al validar la reseña.', 'error');
+      }
+    }
+  };
+
+  const handleDenyReview = async (reviewId) => {
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará la reseña.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`${backendUrl}/api/reviews/${reviewId}/deny`, {
+          withCredentials: true
+        });
+        setReviews(reviews.filter(review => review.id !== reviewId));
+        Swal.fire('Eliminado', 'La reseña ha sido eliminada.', 'success');
+      } catch (err) {
+        console.error("Error denying the review", err);
+        Swal.fire('Error', 'Error al eliminar la reseña.', 'error');
+      }
+    }
+  };
+
+  const sortedPosts = [...posts].sort((a, b) => {
+    if (orderBy === 'created_at') {
+      return sortOrder === 'DESC' ? new Date(b.created_at) - new Date(a.created_at) : new Date(a.created_at) - new Date(b.created_at);
+    }
+    if (orderBy === 'title') {
+      return sortOrder === 'DESC' ? b.title.localeCompare(a.title) : a.title.localeCompare(b.title);
+    }
+    if (orderBy === 'user_name') {
+      return sortOrder === 'DESC' ? b.user_name.localeCompare(a.user_name) : a.user_name.localeCompare(b.user_name);
+    }
+    return 0;
+  });
 
   const renderTags = (postTags) => {
     return postTags.map(tagId => {
       const tag = tags.find(t => t.id === tagId);
-      return <span key={tagId} className="tag">{tag ? tag.name : tagId}</span>;
+      return (
+        <TagItem key={tagId}>
+          <TagName>{tag ? tag.name : tagId}</TagName>
+        </TagItem>
+      );
     });
   };
 
   return (
-    <>
-      <RootContainer />
+    <RootContainer>
       <PageContainer>
         <Container>
           <Header>
-            <SortButton onClick={() => handleOrderByChange2()}>
-              {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Titulo' : 'Autor'}
-            </SortButton>
-            <SortButton onClick={handleSortChange}>
-              {sortOrder === 'DESC' ? '▼' : '▲'}
+            <Title>Contenido para Validar</Title>
+            <SortButton onClick={handleOrderByChange}>
+              {orderBy === 'created_at' ? 'Fecha' : orderBy === 'title' ? 'Título' : 'Autor'}
+              {sortOrder === 'DESC' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
             </SortButton>
           </Header>
+
           <FormContainer>
-            <form onSubmit={handleAddTag}>
+            <Form onSubmit={handleAddTag}>
               <Input
                 type="text"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                placeholder="Nuevo Tag"
+                placeholder="Nueva Etiqueta"
               />
-              <Button type="submit">Agregar</Button>
-            </form>
+              <Button type="submit">Agregar Etiqueta</Button>
+            </Form>
           </FormContainer>
-          {loading && <Card>Loading...</Card>}
+
+          {loading && <Card>Cargando...</Card>}
           {error && <Error>{error}</Error>}
-          {!loading && !error && sortedPosts.length === 0 && (
-            <Card>No hay publicaciones para validar.</Card>
-          )}
-          {!loading && !error && sortedPosts.map(post => (
-            <Card key={post.id}>
-              <Title>
-                <StyledLink to={`/post/${post.id}`}>
-                  {post.title}
-                </StyledLink>
-              </Title>
-              <Meta>
-                By {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
-              </Meta>
-              <p>{post.body.substring(0, 150)}...</p>
-              <div>Tags: {renderTags(post.tags)}</div>
-              {post.validated === 0 && (
-                <ValidationMessage>Validación pendiente</ValidationMessage>
+
+          {!loading && !error && (
+            <>
+              <SectionTitle>Publicaciones para Validar</SectionTitle>
+              {sortedPosts.length === 0 ? (
+                <Card>No hay publicaciones para validar.</Card>
+              ) : (
+                sortedPosts.map(post => (
+                  <Card key={post.id}>
+                    <CardTitle>
+                      <StyledLink to={`/post/${post.id}`}>
+                        {post.title}
+                      </StyledLink>
+                    </CardTitle>
+                    <Meta>
+                      Por {post.user_name} • {new Date(post.created_at).toLocaleDateString()}
+                    </Meta>
+                    <p>{post.body.substring(0, 150)}...</p>
+                    <TagList>{renderTags(post.tags)}</TagList>
+                    {post.validated === 0 && (
+                      <ValidationMessage>
+                        <AlertCircle size={16} />
+                        Validación pendiente
+                      </ValidationMessage>
+                    )}
+                    <ButtonContainer>
+                      <ValidateButton
+                        onClick={() => handleValidatePost(post.id)}
+                        aria-label={`Validate post: ${post.title}`}
+                      >
+                        Validar
+                      </ValidateButton>
+                      <DeleteButton
+                        onClick={() => handleDeletePost(post.id)}
+                        aria-label={`Delete post: ${post.title}`}
+                      >
+                        Eliminar
+                      </DeleteButton>
+                    </ButtonContainer>
+                  </Card>
+                ))
               )}
-              <ButtonContainer>
-                <ValidateButton
-                  onClick={() => handleValidatePost(post.id)}
-                  aria-label={`Validate post: ${post.title}`}
-                >
-                  Validar
-                </ValidateButton>
-                <DeleteButton
-                  onClick={() => handleDeletePost(post.id)}
-                  aria-label={`Delete post: ${post.title}`}
-                >
-                  Eliminar
-                </DeleteButton>
-              </ButtonContainer>
-            </Card>
-          ))}
-          <Card>
-            <h2>Etiquetas Recomendadas</h2>
-            <RecommendedTagList>
-              {recommendedTags.map(tag => (
-                <RecommendedTagItem key={tag.id}>
-                  <RecommendedTagName>{tag.tag}</RecommendedTagName>
-                  <div>
-                    <RecommendedTagButton
+
+              <SectionTitle>Reseñas para Validar</SectionTitle>
+              {reviews.length === 0 ? (
+                <Card>No hay reseñas para validar.</Card>
+              ) : (
+                reviews.map(review => (
+                  <ReviewCard key={review.id}>
+                    <ReviewContent>{review.comment}</ReviewContent>
+                    <ReviewRating>
+                      <Star size={16} fill="#f39c12" />
+                      {review.rating}/5
+                    </ReviewRating>
+                    <Meta>
+                      Por {review.user_name} • {new Date(review.created_at).toLocaleDateString()}
+                    </Meta>
+                    <ButtonContainer>
+                      <ValidateButton
+                        onClick={() => handleValidateReview(review.id)}
+                        aria-label={`Validate review: ${review.id}`}
+                      >
+                        Validar
+                      </ValidateButton>
+                      <DeleteButton
+                        onClick={() => handleDenyReview(review.id)}
+                        aria-label={`Deny review: ${review.id}`}
+                      >
+                        Denegar
+                      </DeleteButton>
+                    </ButtonContainer>
+                  </ReviewCard>
+                ))
+              )}
+
+              <SectionTitle>Etiquetas Recomendadas</SectionTitle>
+              <TagList>
+                {recommendedTags.map(tag => (
+                  <TagItem key={tag.id}>
+                  <TagName>{tag.tag}</TagName>
+                  <TagButtonContainer>
+                    <DeleteTagButton
                       onClick={() => handleAcceptTag(tag.id)}
                       aria-label={`Accept tag: ${tag.tag}`}
                     >
-                      ✓
-                    </RecommendedTagButton>
-                    <RecommendedTagButton
+                      <StyledCheck size={20} />
+                    </DeleteTagButton>
+                    <DeleteTagButton
                       onClick={() => handleDenyTag(tag.id)}
                       aria-label={`Deny tag: ${tag.tag}`}
                     >
-                      ×
-                    </RecommendedTagButton>
-                  </div>
-                </RecommendedTagItem>
-              ))}
-            </RecommendedTagList>
-          </Card>
-          <Card>
-            <h2>Etiquetas Actuales</h2>
-            <TagList>
-              {tags.map(tag => (
-                <TagItem key={tag.id}>
-                  <TagName>{tag.name}</TagName>
-                  <DeleteTagButton 
-                    onClick={() => handleDeleteTag(tag.id)}
-                    aria-label={`Delete tag: ${tag.name}`}
-                  >
-                    ×
-                  </DeleteTagButton>
+                      <X size={20} />
+                    </DeleteTagButton>
+                  </TagButtonContainer>
                 </TagItem>
-              ))}
-            </TagList>
-          </Card>
+                ))}
+              </TagList>
+
+              <SectionTitle>Etiquetas Actuales</SectionTitle>
+              <TagList>
+                {tags.map(tag => (
+                  <TagItem key={tag.id}>
+                    <TagName>{tag.name}</TagName>
+                    <DeleteTagButton 
+                      onClick={() => handleDeleteTag(tag.id)}
+                      aria-label={`Delete tag: ${tag.name}`}
+                    >
+                      <X size={20} />
+                    </DeleteTagButton>
+                  </TagItem>
+                ))}
+              </TagList>
+            </>
+          )}
         </Container>
       </PageContainer>
-    </>
+    </RootContainer>
   );
 }
 

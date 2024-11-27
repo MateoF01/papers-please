@@ -344,7 +344,7 @@ export default function SinglePost() {
   
     const result = await Swal.fire({
       title: '¿Estás seguro?',
-      text: 'Vas a enviar esta reseña.',
+      text: 'Vas a enviar esta reseña, será verificada por un administrador.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -380,7 +380,7 @@ export default function SinglePost() {
   const handleEditReview = async (review) => {
     const result = await Swal.fire({
       title: '¿Estás seguro?',
-      text: 'Vas a editar esta reseña.',
+      text: 'Vas a editar esta reseña, será verificada por un administrador.',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#3085d6',
@@ -398,6 +398,9 @@ export default function SinglePost() {
 
   const handleSaveReview = async (reviewId) => {
     try {
+      await axios.put(`${backendUrl}/api/reviews/${reviewId}/unvalidate`, {}, {
+        withCredentials: true
+      });
       await axios.put(`${backendUrl}/api/reviews/${reviewId}`, {
         rating: editedRating,
         comment: editedComment
@@ -405,7 +408,7 @@ export default function SinglePost() {
         withCredentials: true
       });
       const updatedReviews = reviews.map(review => 
-        review.id === reviewId ? { ...review, rating: editedRating, comment: editedComment } : review
+        review.id === reviewId ? { ...review, rating: editedRating, comment: editedComment, validated: 0 } : review
       );
       setReviews(updatedReviews);
       setEditingReviewId(null);
@@ -575,7 +578,7 @@ export default function SinglePost() {
                     <p>{isPostOwner ? "No puedes hacer una reseña en una publicación propia." : "Ya realizaste una reseña."}</p>
                   )}
                   <ReviewList>
-                    {reviews.map((review) => (
+                    {reviews.filter(review => review.validated === 1).map((review) => (
                       <ReviewItem key={review.id}>
                         {editingReviewId === review.id ? (
                           <form onSubmit={(e) => { e.preventDefault(); handleSaveReview(review.id); }}>
