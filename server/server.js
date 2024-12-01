@@ -101,26 +101,78 @@ app.get('/api/tags', (req, res) => {
     });
 });
 
+
+const getTags = async () => {
+    return new Promise((resolve, reject) => {
+      const query = 'SELECT id, name FROM tags';
+      db.all(query, [], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  };
+
+
+const getPostsAndTags = async () => {
+return new Promise((resolve, reject) => {
+    const query = `
+    SELECT posts.id, posts.title, posts.tags, tags.id as tag_id, tags.name as tag_name
+    FROM posts
+    JOIN tags ON (posts.tags & (1 << tags.id)) != 0
+    WHERE posts.validated = 1
+    `;
+    db.all(query, [], (err, rows) => {
+    if (err) {
+        reject(err);
+    } else {
+        const postsByTag = rows.reduce((acc, row) => {
+        if (!acc[row.tag_name]) {
+            acc[row.tag_name] = [];
+        }
+        acc[row.tag_name].push({ id: row.id, title: row.title });
+        return acc;
+        }, {});
+        resolve(postsByTag);
+    }
+    });
+});
+};
+
+
 // Chat con IA de openai
 app.post('/api/chat', async (req, res) => {
     try {
       const { messages, context } = req.body;
   
+      // tags
+      const tags = await getTags();
+      const tagsList = tags.map(tag => `${tag.id}|${tag.name}`).join('\n');
+  
+      // diccionario tags y posts
+      const postsByTag = await getPostsAndTags();
+  
+      const postsList = Object.entries(postsByTag).map(([tag, posts]) => {
+        const postTitles = posts.map(post => post.title).join(', ');
+        return `${tag}: ${postTitles}`;
+      }).join('\n');
+  
       // Contexto de sistema
-      const systemMessage = { role: "system", content: context || `Sos un asistente virtual de una plataforma de papers academicos llamado EinsteinBot, 
-        hablas solo en español rioplatense usando voseo verbal, te limitas a habla sobre
-        0|matemática
-        1|ciencia
-        2|filosofía
-        3|historia
-        4|literatura
-        5|tecnologia
-        6|arte
-        7|politica
-        8|economia
-        9|psicologia,
-        no respondes preguntas que no esten relacionadas con esos temas academicos,
-        envia emojis relacionados a lo que decis junto con tus respuestas` };
+      const systemMessage = { 
+        role: "system", 
+        content: context || `Sos un asistente virtual de una plataforma de papers academicos llamada Paper Please,
+          tu nombre es EinsteinBot,
+          si te saludan, respondes con un saludo dando tu nombre y el de la pagina web,  
+          hablas solo en español rioplatense usando voseo verbal, te limitas a habla sobre estos temas academicos:
+          ${tagsList}(esto es una lista de tags, si vas a mencionar los temas deci los nombres de los tags unicamente),
+          no respondes preguntas que no esten relacionadas con esos temas academicos,
+          envia emojis relacionados a lo que decis junto con tus respuestas.
+          Aquí tienes la lista de publicaciones y sus etiquetas del sitio web al que perteneces:
+          ${postsList}, si alguien hace una pregunta sobre uno de los temas que podes hablar, 
+          haces referencia a las publicaciones que sean de ese tema para recomendar su lectura`
+      };
       const fullMessages = [systemMessage, ...messages];
   
       const completion = await openai.chat.completions.create({

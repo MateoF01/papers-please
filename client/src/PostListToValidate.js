@@ -646,27 +646,31 @@ export default function PostListToValidate() {
               )}
 
               <SectionTitle>Etiquetas Recomendadas</SectionTitle>
-              <TagList>
-                {recommendedTags.map(tag => (
-                  <TagItem key={tag.id}>
-                  <TagName>{tag.tag}</TagName>
-                  <TagButtonContainer>
-                    <DeleteTagButton
-                      onClick={() => handleAcceptTag(tag.id)}
-                      aria-label={`Accept tag: ${tag.tag}`}
-                    >
-                      <StyledCheck size={20} />
-                    </DeleteTagButton>
-                    <DeleteTagButton
-                      onClick={() => handleDenyTag(tag.id)}
-                      aria-label={`Deny tag: ${tag.tag}`}
-                    >
-                      <X size={20} />
-                    </DeleteTagButton>
-                  </TagButtonContainer>
-                </TagItem>
-                ))}
-              </TagList>
+              {recommendedTags.length === 0 ? (
+                <Card>No hay tags recomendadas.</Card>
+              ) : (
+                <TagList>
+                  {recommendedTags.map(tag => (
+                    <TagItem key={tag.id}>
+                      <TagName>{tag.tag}</TagName>
+                      <ButtonContainer>
+                        <DeleteTagButton
+                          onClick={() => handleAcceptTag(tag.id)}
+                          aria-label={`Accept tag: ${tag.tag}`}
+                        >
+                          <StyledCheck size={20} />
+                        </DeleteTagButton>
+                        <DeleteTagButton
+                          onClick={() => handleDenyTag(tag.id)}
+                          aria-label={`Deny tag: ${tag.tag}`}
+                        >
+                          <X size={20} />
+                        </DeleteTagButton>
+                      </ButtonContainer>
+                    </TagItem>
+                  ))}
+                </TagList>
+              )}
 
               <SectionTitle>Etiquetas Actuales</SectionTitle>
               <TagList>
