@@ -170,7 +170,8 @@ app.post('/api/chat', async (req, res) => {
           envia emojis relacionados a lo que decis junto con tus respuestas.
           Aquí tienes la lista de publicaciones y sus etiquetas del sitio web al que perteneces:
           ${postsList}, si alguien hace una pregunta sobre uno de los temas que podes hablar, 
-          haces referencia a las publicaciones que sean de ese tema para recomendar su lectura`
+          podes hacer referencia a las publicaciones que sean de ese tema para recomendar su lectura.
+          podes brindar todo tipo de informacion dentro de los temas academicos que el usuario solicite, y dar tu opinion si es solicitada.`
       };
       const fullMessages = [systemMessage, ...messages];
   
