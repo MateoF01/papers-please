@@ -370,7 +370,7 @@ function NavbarContent() {
                   hasUnvalidatedContent={hasUnvalidatedContent}
                   onClick={() => navigate('/posts-to-validate')}
                 >
-                  Validar Contenido
+                  Panel Admin
                 </NavbarButton>
               </Popover>
             )}
